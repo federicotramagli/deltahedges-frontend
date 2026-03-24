@@ -1,0 +1,3427 @@
+import { useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
+import {
+  Activity,
+  ArrowRight,
+  BellDot,
+  CircleAlert,
+  Check,
+  ChevronDown,
+  Home,
+  KeyRound,
+  Layers3,
+  Logs,
+  Plus,
+  Search,
+  Settings,
+  SlidersHorizontal,
+  Wallet,
+  Webhook,
+  X,
+} from "lucide-react";
+
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+
+const sidebarSections = [
+  {
+    title: "Cruscotto",
+    items: ["Panoramica", "Performance", "Cicli", "Conti"],
+  },
+  {
+    title: "Motore",
+    items: ["Trade", "Chiavi API", "Webhooks"],
+  },
+  {
+    title: "Profilo",
+    items: ["Impostazioni"],
+  },
+  {
+    title: "Guide",
+    items: ["Guida strategia", "Guida piattaforma"],
+  },
+];
+
+const sidebarIcons = {
+  Panoramica: Home,
+  Performance: Activity,
+  Cicli: Layers3,
+  Conti: Wallet,
+  Trade: Logs,
+  "Chiavi API": KeyRound,
+  Webhooks: Webhook,
+  Impostazioni: Settings,
+  "Guida strategia": CircleAlert,
+  "Guida piattaforma": SlidersHorizontal,
+};
+
+const initialSlots = [];
+
+const initialProfiles = [
+  {
+    id: "profile-base",
+    name: "Profilo Base 1.5%",
+    riskPerTrade: 1.5,
+    maxDailyTrades: 2,
+    orphanTimeoutMs: 1000,
+  },
+  {
+    id: "profile-recovery",
+    name: "Recupero 0.2752x",
+    riskPerTrade: 1.5,
+    maxDailyTrades: 2,
+    orphanTimeoutMs: 900,
+  },
+  {
+    id: "profile-funded",
+    name: "Weekly payout 80%",
+    riskPerTrade: 2,
+    maxDailyTrades: 2,
+    orphanTimeoutMs: 800,
+  },
+];
+
+const initialSubscription = {
+  planName: "Growth",
+  slotsIncluded: 8,
+  renewalDate: "12 Apr 2026",
+  billingCadence: "Mensile",
+};
+
+const initialNotifications = [];
+const initialCycleLogs = [];
+
+const challengeOptions = [
+  {
+    value: "FundingPips 25K",
+    title: "FundingPips 25K",
+    description: "2-Step · fee $199",
+  },
+  {
+    value: "FundingPips 50K",
+    title: "FundingPips 50K",
+    description: "2-Step · fee $289",
+  },
+  {
+    value: "FundingPips 100K",
+    title: "FundingPips 100K",
+    description: "2-Step · fee $549",
+  },
+];
+
+const phaseOptions = [
+  {
+    value: "Fase 1",
+    title: "Fase 1",
+    description: "Target 8% · drawdown 10%",
+  },
+  {
+    value: "Fase 2",
+    title: "Fase 2",
+    description: "Target 5% · conferma finale",
+  },
+  {
+    value: "Funded",
+    title: "Funded",
+    description: "Monitoraggio funded e payout",
+  },
+];
+
+const billingCadenceOptions = [
+  {
+    value: "Mensile",
+    title: "Mensile",
+    description: "Pagamento ricorrente ogni mese.",
+  },
+  {
+    value: "Trimestrale",
+    title: "Trimestrale",
+    description: "3 mesi in un'unica soluzione.",
+  },
+  {
+    value: "Annuale",
+    title: "Annuale",
+    description: "12 mesi con ciclo lungo.",
+  },
+];
+
+const exportScopeOptions = [
+  {
+    value: "oggi",
+    title: "Oggi",
+    description: "Solo la giornata corrente.",
+  },
+  {
+    value: "ultimi_7_giorni",
+    title: "7 giorni",
+    description: "Ultima settimana.",
+  },
+  {
+    value: "ultimi_30_giorni",
+    title: "30 giorni",
+    description: "Ultimo mese operativo.",
+  },
+  {
+    value: "tutto",
+    title: "Tutto",
+    description: "Storico completo disponibile.",
+  },
+];
+
+const panelClass =
+  "rounded-xl border border-white/8 bg-[linear-gradient(180deg,rgba(20,20,20,0.78),rgba(10,10,10,0.9))] shadow-[0_24px_70px_rgba(0,0,0,0.34),inset_0_1px_0_rgba(255,255,255,0.03)] backdrop-blur-2xl";
+
+const inputClass =
+  "h-11 w-full rounded-md border border-input bg-background/80 px-3 text-sm text-foreground outline-none transition placeholder:text-muted-foreground focus:border-primary/35 focus:ring-2 focus:ring-primary/10";
+
+const primaryButtonClass =
+  "rounded-md border border-primary/20 bg-primary text-primary-foreground shadow-[0_12px_34px_rgba(210,255,0,0.14)] hover:brightness-95";
+
+const secondaryButtonClass =
+  "rounded-md border border-input bg-background/75 text-foreground hover:bg-muted/70";
+
+function formatCurrency(value) {
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+    maximumFractionDigits: 0,
+  }).format(value);
+}
+
+function formatSignedCurrency(value) {
+  const amount = Number(value || 0);
+  const formatted = formatCurrency(Math.abs(amount));
+  if (amount > 0) return `+${formatted}`;
+  if (amount < 0) return `-${formatted}`;
+  return formatted;
+}
+
+function formatMultiplier(value) {
+  return `${Number(value).toFixed(4)}x`;
+}
+
+function formatProjectionNumber(value) {
+  return Math.round(Math.abs(Number(value || 0))).toLocaleString("it-IT");
+}
+
+function formatDateTime(value) {
+  if (!value) return "In attesa";
+  return new Date(value).toLocaleString("it-IT", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+function nowHourMinute() {
+  return new Date().toLocaleTimeString("it-IT", {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+function nextSlotName(index) {
+  return `Slot ${String(index).padStart(2, "0")}`;
+}
+
+function getChallengeCost(challenge) {
+  if (challenge?.includes("25K")) return 199;
+  if (challenge?.includes("50K")) return 289;
+  if (challenge?.includes("100K")) return 549;
+  return 0;
+}
+
+function getCycleOutcomeLabel(value) {
+  if (value === "FAIL_FASE_1") return "Fail Fase 1";
+  if (value === "FAIL_FASE_2") return "Fail Fase 2";
+  if (value === "FAIL_FUNDED") return "Fail Funded";
+  return value || "Ciclo chiuso";
+}
+
+function getCycleOutcomeBadgeClass(value) {
+  if (value === "FAIL_FUNDED") {
+    return "border-rose-500/20 bg-rose-500/10 text-rose-300 hover:bg-rose-500/10";
+  }
+
+  if (value === "FAIL_FASE_2") {
+    return "border-amber-500/20 bg-amber-500/10 text-amber-300 hover:bg-amber-500/10";
+  }
+
+  return "border-primary/20 bg-primary/10 text-primary hover:bg-primary/10";
+}
+
+function buildEquityCurve(cycleLogs) {
+  let cumulativeNet = 0;
+
+  return cycleLogs.map((cycle, index) => {
+    cumulativeNet += Number(cycle.netProfit || 0);
+
+    return {
+      id: cycle.id,
+      index: index + 1,
+      label: `Ciclo ${index + 1}`,
+      cumulativeNet,
+      netProfit: Number(cycle.netProfit || 0),
+      closedAt: cycle.closedAt,
+    };
+  });
+}
+
+function EquityCurveChart({ points }) {
+  if (!points.length) return null;
+
+  const width = 880;
+  const height = 260;
+  const padding = 24;
+  const values = points.map((point) => point.cumulativeNet);
+  const max = Math.max(...values, 0);
+  const min = Math.min(...values, 0);
+  const range = Math.max(max - min, 1);
+  const stepX = points.length === 1 ? 0 : (width - padding * 2) / (points.length - 1);
+  const zeroY = height - padding - ((0 - min) / range) * (height - padding * 2);
+
+  const line = points
+    .map((point, index) => {
+      const x = padding + index * stepX;
+      const y =
+        height -
+        padding -
+        ((point.cumulativeNet - min) / range) * (height - padding * 2);
+
+      return `${x},${y}`;
+    })
+    .join(" ");
+
+  const area = `M ${padding} ${height - padding} ${line
+    .split(" ")
+    .map((pair, index) => (index === 0 ? `L ${pair}` : pair))
+    .join(" ")} L ${padding + stepX * (points.length - 1)} ${height - padding} Z`;
+
+  return (
+    <div className="overflow-hidden rounded-lg border border-border/80 bg-card/90 p-4">
+      <svg viewBox={`0 0 ${width} ${height}`} className="h-[260px] w-full">
+        <defs>
+          <linearGradient id="equity-area" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="rgba(194,255,43,0.28)" />
+            <stop offset="100%" stopColor="rgba(194,255,43,0)" />
+          </linearGradient>
+        </defs>
+        <line
+          x1={padding}
+          y1={zeroY}
+          x2={width - padding}
+          y2={zeroY}
+          stroke="rgba(255,255,255,0.12)"
+          strokeDasharray="4 6"
+        />
+        <path d={area} fill="url(#equity-area)" />
+        <polyline
+          points={line}
+          fill="none"
+          stroke="rgb(194 255 43)"
+          strokeWidth="3"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+        {points.map((point, index) => {
+          const x = padding + index * stepX;
+          const y =
+            height -
+            padding -
+            ((point.cumulativeNet - min) / range) * (height - padding * 2);
+
+          return (
+            <circle
+              key={point.id}
+              cx={x}
+              cy={y}
+              r="4"
+              fill="rgb(194 255 43)"
+              stroke="rgba(7,11,20,1)"
+              strokeWidth="2"
+            />
+          );
+        })}
+      </svg>
+      <div className="mt-4 grid gap-3 sm:grid-cols-3">
+        <div className="rounded-md border border-border/80 bg-muted/25 px-4 py-3">
+          <div className="text-xs uppercase tracking-[0.14em] text-muted-foreground">
+            Baseline
+          </div>
+          <div className="mt-2 text-sm font-medium text-foreground">
+            Netto cumulato da cicli chiusi
+          </div>
+        </div>
+        <div className="rounded-md border border-border/80 bg-muted/25 px-4 py-3">
+          <div className="text-xs uppercase tracking-[0.14em] text-muted-foreground">
+            Formula
+          </div>
+          <div className="mt-2 text-sm font-medium text-foreground">
+            Profitto broker realizzato - costo prop
+          </div>
+        </div>
+        <div className="rounded-md border border-border/80 bg-muted/25 px-4 py-3">
+          <div className="text-xs uppercase tracking-[0.14em] text-muted-foreground">
+            Ultimo punto
+          </div>
+          <div className="mt-2 text-sm font-medium text-foreground">
+            {formatSignedCurrency(points.at(-1)?.cumulativeNet || 0)}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function createEmptySlot(index, profileName) {
+  return {
+    id: `cyc_slot_${Date.now()}`,
+    slot: nextSlotName(index),
+    phase: "Fase 1",
+    challenge: "FundingPips 100K",
+    brokerAccount: "",
+    propLogin: "",
+    propPassword: "",
+    propServer: "",
+    brokerLogin: "",
+    brokerPassword: "",
+    brokerServer: "",
+    challengeState: "BOZZA",
+    status: "OPEN",
+    parametersProfile: profileName,
+    propEquity: 100000,
+    brokerEquity: 4000,
+    target: 1529,
+    hedgeBaseTarget: 1529,
+    multiplier: 0.1529,
+    brokerStartEquity: 4000,
+    cycleBalance: 0,
+    riskPerTrade: 1.5,
+    maxDailyTrades: 2,
+    orphanTimeoutMs: 1000,
+    updatedAt: nowHourMinute(),
+  };
+}
+
+function normaliseStatus(phase) {
+  if (phase === "Funded") return "FUNDED";
+  if (phase === "Fase 2") return "PRACTITIONER";
+  return "OPEN";
+}
+
+function hasPropConnection(slot) {
+  return Boolean(
+    slot?.propLogin?.trim() &&
+      slot?.propPassword?.trim() &&
+      slot?.propServer?.trim(),
+  );
+}
+
+function hasBrokerConnection(slot) {
+  return Boolean(
+    slot?.brokerAccount?.trim() &&
+      slot?.brokerLogin?.trim() &&
+      slot?.brokerPassword?.trim() &&
+      slot?.brokerServer?.trim(),
+  );
+}
+
+function hasStrategyParameters(slot) {
+  return Boolean(slot?.parametersProfile?.trim());
+}
+
+function getPreparationState(slot) {
+  if (!slot) return "BOZZA";
+  if (slot.challengeState === "ATTIVA") return "ATTIVA";
+  if (
+    hasPropConnection(slot) &&
+    hasBrokerConnection(slot) &&
+    hasStrategyParameters(slot)
+  ) {
+    return "PRONTA";
+  }
+
+  return "BOZZA";
+}
+
+function getMetaApiReadiness(slot) {
+  if (hasPropConnection(slot) && hasBrokerConnection(slot)) {
+    return {
+      label: "MetaApi pronta",
+      tone: "ready",
+    };
+  }
+
+  if (hasPropConnection(slot) || hasBrokerConnection(slot)) {
+    return {
+      label: "Connessione parziale",
+      tone: "partial",
+    };
+  }
+
+  return {
+    label: "Da collegare",
+    tone: "empty",
+  };
+}
+
+function maskLogin(value) {
+  if (!value) return "Non inserito";
+  if (value.length <= 4) return value;
+  return `${value.slice(0, 2)}•••${value.slice(-2)}`;
+}
+
+function calculatePhase1PassLoss(baseTarget) {
+  return Number(baseTarget || 0) * 0.8;
+}
+
+function calculatePhase2PassLoss(baseTarget) {
+  return Number(baseTarget || 0) * 0.9;
+}
+
+function calculateBrokerLossGuardrail(brokerStartEquity) {
+  return Number(brokerStartEquity || 0) * 0.3;
+}
+
+function getPassRatioForPhase(phase) {
+  if (phase === "Fase 1") return 0.8;
+  if (phase === "Fase 2") return 0.5;
+  if (phase === "Funded") return 0.5;
+  return 0;
+}
+
+function getEffectiveCycleTarget(slot) {
+  const currentTarget = Number(slot?.target || 0);
+  const phase1BaseTarget = Number(slot?.hedgeBaseTarget || 0);
+
+  if (slot?.phase === "Fase 1" && phase1BaseTarget > 0) {
+    return phase1BaseTarget;
+  }
+
+  return currentTarget || phase1BaseTarget;
+}
+
+function getBrokerProjections(slot) {
+  const failGain = getEffectiveCycleTarget(slot);
+  const passLoss = failGain * getPassRatioForPhase(slot?.phase);
+
+  return {
+    failGain,
+    passLoss,
+  };
+}
+
+function StatusBadge({ value }) {
+  if (value === "OPEN") {
+    return (
+      <Badge className="border-primary/20 bg-primary/10 text-primary hover:bg-primary/10">
+        APERTO
+      </Badge>
+    );
+  }
+
+  if (value === "ORPHAN_ABORTED") {
+    return (
+      <Badge className="border-amber-500/20 bg-amber-500/10 text-amber-300 hover:bg-amber-500/10">
+        ORPHAN ABORT
+      </Badge>
+    );
+  }
+
+  if (value === "FUNDED") {
+    return (
+      <Badge className="border-primary/20 bg-primary/10 text-primary hover:bg-primary/10">
+        FUNDED
+      </Badge>
+    );
+  }
+
+  if (value === "PRACTITIONER") {
+    return (
+      <Badge className="border-violet-500/20 bg-violet-500/10 text-violet-300 hover:bg-violet-500/10">
+        FASE 2
+      </Badge>
+    );
+  }
+
+  return (
+    <Badge className="border-border/80 bg-muted/35 text-muted-foreground hover:bg-muted/35">
+      CHIUSO
+    </Badge>
+  );
+}
+
+function ChallengeStateBadge({ value }) {
+  if (value === "ATTIVA") {
+    return (
+      <Badge className="border-primary/20 bg-primary/10 text-primary hover:bg-primary/10">
+        ATTIVA
+      </Badge>
+    );
+  }
+
+  if (value === "PRONTA") {
+    return (
+      <Badge className="border-amber-500/20 bg-amber-500/10 text-amber-300 hover:bg-amber-500/10">
+        PRONTA
+      </Badge>
+    );
+  }
+
+  return (
+    <Badge className="border-border/80 bg-muted/35 text-muted-foreground hover:bg-muted/35">
+      BOZZA
+    </Badge>
+  );
+}
+
+function CycleBalanceBar({ value, leftValue, rightValue, compact = false }) {
+  const clamped = Math.max(-100, Math.min(100, value));
+  const width = `${Math.abs(clamped)}%`;
+  const directionClass =
+    clamped < 0 ? "right-1/2 bg-rose-400" : "left-1/2 bg-primary";
+  const markerLeft = `calc(50% + ${clamped * 0.5}%)`;
+
+  if (compact) {
+    return (
+      <div className="rounded-md border border-border/80 bg-background/70 px-3 py-2.5">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <div className="text-[11px] font-medium text-primary">
+              + {formatProjectionNumber(leftValue)}
+            </div>
+            <div className="mt-0.5 text-[10px] uppercase tracking-[0.12em] text-muted-foreground">
+              Challenge fallita
+            </div>
+          </div>
+          <div className="min-w-0 text-right">
+            <div className="text-[11px] font-medium text-rose-300">
+              - {formatProjectionNumber(rightValue)}
+            </div>
+            <div className="mt-0.5 text-[10px] uppercase tracking-[0.12em] text-muted-foreground">
+              Challenge passata
+            </div>
+          </div>
+        </div>
+        <div className="relative mt-2 h-1.5 rounded-full bg-muted/55">
+          <div className="absolute left-1/2 top-1/2 h-3 w-px -translate-x-1/2 -translate-y-1/2 bg-border" />
+          {clamped !== 0 ? (
+            <div
+              className={`absolute top-0 h-full ${directionClass}`}
+              style={{ width }}
+            />
+          ) : null}
+          <div
+            className="absolute top-1/2 h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full border border-border bg-card shadow-[0_0_0_1px_rgba(255,255,255,0.02),0_0_14px_rgba(0,0,0,0.28)]"
+            style={{ left: markerLeft }}
+          />
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center justify-between text-xs text-muted-foreground">
+        <span>Challenge fallita</span>
+        <span>Start</span>
+        <span>Challenge passata</span>
+      </div>
+      <div className="relative h-2 rounded-full bg-muted/55">
+        <div className="absolute left-1/2 top-1/2 h-4 w-px -translate-x-1/2 -translate-y-1/2 bg-border" />
+        {clamped !== 0 ? (
+          <div
+            className={`absolute top-0 h-full ${directionClass}`}
+            style={{ width }}
+          />
+        ) : null}
+        <div
+          className="absolute top-1/2 h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full border border-border bg-card shadow-[0_0_0_1px_rgba(255,255,255,0.02),0_0_14px_rgba(0,0,0,0.28)]"
+          style={{ left: markerLeft }}
+        />
+      </div>
+    </div>
+  );
+}
+
+function FundingPipsLogo({ className = "" }) {
+  return (
+    <svg
+      viewBox="0 0 22 24"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      className={className}
+    >
+      <path
+        d="M4 2C4 3.10457 3.10457 4 2 4C0.89543 4 0 3.10457 0 2C0 0.89543 0.89543 0 2 0C3.10457 0 4 0.89543 4 2Z"
+        fill="currentColor"
+      />
+      <path
+        d="M9 19C9 17.8954 9.89543 17 11 17C12.1046 17 13 17.8954 13 19V22C13 23.1046 12.1046 24 11 24C9.89543 24 9 23.1045 9 22V19Z"
+        fill="currentColor"
+      />
+      <path
+        d="M8.6279 0C7.52333 0 6.6279 0.89543 6.6279 2C6.6279 3.10457 7.52333 4 8.6279 4H14.6064C16.4806 4 18 5.51937 18 7.39361C18 9.26785 16.4806 10.7872 14.6064 10.7872H0V22C0 23.1046 0.89543 24 2 24C3.10457 24 4 23.1046 4 22V14.7872H14.6064C18.6898 14.7872 22 11.477 22 7.39361C22 3.31023 18.6898 0 14.6064 0H8.6279Z"
+        fill="currentColor"
+      />
+    </svg>
+  );
+}
+
+function DeltaHedgeLogo({ className = "" }) {
+  return (
+    <svg
+      viewBox="0 0 84 84"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      className={className}
+    >
+      <path
+        d="M42 8L10 68H29.5L42 45L54.5 68H74L42 8Z"
+        fill="currentColor"
+      />
+      <path
+        d="M28 68L53 18L64 18L39 68H28Z"
+        fill="#080A03"
+      />
+      <path
+        d="M44 58L61 29L66 34L49 63L44 58Z"
+        fill="currentColor"
+      />
+    </svg>
+  );
+}
+
+function FundingPipsWordmark({ className = "", large = false }) {
+  return (
+    <div
+      className={`${large ? "flex w-full" : "inline-flex"} items-center text-white shadow-[inset_0_0_0_1px_rgba(255,255,255,0.05)] ${
+        large
+          ? "min-h-[78px] gap-4 bg-[linear-gradient(135deg,#11178d,#1b22b4)] px-4 py-4"
+          : "gap-2 rounded-md bg-[#0b0f63] px-3 py-2"
+      } ${className}`}
+    >
+      <FundingPipsLogo className={`${large ? "h-9 w-9" : "h-4 w-4"} shrink-0`} />
+      <span
+        className={`font-semibold tracking-[-0.035em] ${large ? "text-[28px] leading-none" : "text-sm"}`}
+      >
+        FundingPips
+      </span>
+    </div>
+  );
+}
+
+function DeltaHedgeWordmark({ className = "" }) {
+  return (
+    <div className={`inline-flex items-center gap-3 ${className}`}>
+      <DeltaHedgeLogo className="size-11 shrink-0 text-primary" />
+      <div className="flex items-baseline text-[22px] font-black uppercase tracking-[-0.05em]">
+        <span className="text-primary">Delta</span>
+        <span className="text-foreground">Hedge</span>
+      </div>
+    </div>
+  );
+}
+
+function SlotPowerSwitch({ checked, onToggle, title }) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={checked}
+      title={title}
+      onPointerDown={(event) => {
+        event.stopPropagation();
+      }}
+      onClick={(event) => {
+        event.stopPropagation();
+        onToggle();
+      }}
+      className={`relative z-10 inline-flex h-8 w-[58px] cursor-pointer items-center rounded-full border transition ${
+        checked
+          ? "border-primary/35 bg-primary/85"
+          : "border-border/80 bg-muted/50"
+      }`}
+    >
+      <span
+        className={`pointer-events-none absolute text-[10px] font-semibold tracking-[0.14em] ${
+          checked ? "left-3 text-[#080a03]" : "right-3 text-muted-foreground"
+        }`}
+      >
+        {checked ? "ON" : "OFF"}
+      </span>
+      <span
+        className={`pointer-events-none absolute top-1/2 size-6 -translate-y-1/2 rounded-full bg-white shadow-[0_4px_14px_rgba(0,0,0,0.22)] transition ${
+          checked ? "left-[30px]" : "left-[2px]"
+        }`}
+      />
+    </button>
+  );
+}
+
+function CompactSummaryCard({ label, value, note, change }) {
+  return (
+    <div className="rounded-lg border border-white/8 bg-[linear-gradient(180deg,rgba(24,24,24,0.72),rgba(12,12,12,0.9))] px-4 py-4 shadow-[0_18px_44px_rgba(0,0,0,0.24),inset_0_1px_0_rgba(255,255,255,0.03)] backdrop-blur-xl">
+      <div className="flex items-start justify-between gap-3">
+        <div className="text-xs uppercase tracking-[0.14em] text-muted-foreground">{label}</div>
+        {change ? (
+          <div className="text-[11px] font-medium uppercase tracking-[0.14em] text-muted-foreground">
+            {change}
+          </div>
+        ) : null}
+      </div>
+      <div className="mt-3 text-2xl font-semibold text-foreground">{value}</div>
+      <div className="mt-2 text-sm leading-6 text-muted-foreground">{note}</div>
+    </div>
+  );
+}
+
+function GuideStrip({ steps }) {
+  const currentStepIndex = (() => {
+    const nextIndex = steps.findIndex((step) => !step.done);
+    return nextIndex === -1 ? steps.length - 1 : nextIndex;
+  })();
+  const completedSteps = steps.filter((step) => step.done).length;
+  const trackerPercent =
+    steps.length <= 1
+      ? completedSteps > 0
+        ? 100
+        : 0
+      : Math.max(0, ((completedSteps - 1) / (steps.length - 1)) * 100);
+
+  return (
+    <div className="sticky top-4 z-10 border-b border-border/80 bg-background/92 pb-4 pt-1 backdrop-blur-md">
+      <div className="rounded-xl border border-white/8 bg-[linear-gradient(180deg,rgba(18,18,18,0.7),rgba(10,10,10,0.88))] px-4 py-5 shadow-[0_22px_52px_rgba(0,0,0,0.3),inset_0_1px_0_rgba(255,255,255,0.03)] backdrop-blur-xl">
+        <div className="flex items-center justify-between gap-3">
+          <div className="text-[11px] uppercase tracking-[0.16em] text-muted-foreground">
+            Progress tracker
+          </div>
+          <div className="text-[11px] font-medium uppercase tracking-[0.16em] text-primary">
+            {completedSteps}/{steps.length} completati
+          </div>
+        </div>
+
+        <div className="mt-6 overflow-x-auto pb-1">
+          <div className="relative min-w-[760px] px-2">
+            <div className="absolute left-8 right-8 top-4 h-px bg-border/80" />
+            <div
+              className="absolute left-8 top-4 h-px bg-primary transition-all duration-300"
+              style={{ width: `calc((100% - 4rem) * ${trackerPercent / 100})` }}
+            />
+
+            <div className="relative flex items-start justify-between gap-4 whitespace-nowrap">
+              {steps.map((step, index) => {
+                const isActive = index === currentStepIndex;
+                const isDone = step.done;
+
+                return (
+                  <div
+                    key={step.title}
+                    className="flex min-w-0 flex-1 flex-col items-center text-center"
+                  >
+                    <div
+                      className={`relative z-10 flex size-8 items-center justify-center rounded-full border text-xs font-semibold transition ${
+                        isDone
+                          ? "border-primary bg-primary text-[#080a03]"
+                        : isActive
+                            ? "border-white/12 bg-[linear-gradient(180deg,rgba(255,255,255,0.08),rgba(255,255,255,0.02))] text-primary shadow-[0_10px_24px_rgba(0,0,0,0.24),inset_0_1px_0_rgba(255,255,255,0.03)]"
+                            : "border-border/80 bg-background text-muted-foreground"
+                      }`}
+                    >
+                      {isDone ? <Check className="size-4" strokeWidth={3} /> : index + 1}
+                    </div>
+                    <div className="mt-3 text-xs font-medium text-foreground">{step.title}</div>
+                    <div className="mt-2 flex h-7 items-center justify-center">
+                      {isDone ? (
+                        <span className="text-[10px] font-medium uppercase tracking-[0.08em] text-primary">
+                          Completato
+                        </span>
+                      ) : isActive ? (
+                        <button
+                          type="button"
+                          onClick={step.onAction}
+                          className="inline-flex h-7 items-center rounded-md bg-primary px-3 text-[10px] font-medium uppercase tracking-[0.08em] text-[#080a03] transition hover:bg-primary/90"
+                        >
+                          Vai
+                        </button>
+                      ) : (
+                        <span className="text-[10px] font-medium uppercase tracking-[0.08em] text-muted-foreground/70">
+                          In attesa
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function Field({ label, hint, children }) {
+  return (
+    <label className="block space-y-2">
+      <div className="flex items-center justify-between gap-3">
+        <span className="text-sm font-medium text-foreground">{label}</span>
+        {hint ? <span className="text-xs text-muted-foreground">{hint}</span> : null}
+      </div>
+      {children}
+    </label>
+  );
+}
+
+function OptionCardGroup({
+  options,
+  value,
+  onChange,
+  columns = "sm:grid-cols-3",
+}) {
+  return (
+    <div className={`grid gap-3 ${columns}`}>
+      {options.map((option) => {
+        const active = option.value === value;
+
+        return (
+          <button
+            key={option.value}
+            type="button"
+            onClick={() => onChange(option.value)}
+            className={`rounded-lg border px-4 py-3 text-left transition ${
+              active
+                ? "border-primary/25 bg-primary text-primary-foreground shadow-[0_18px_38px_rgba(0,0,0,0.22)] hover:brightness-95"
+                : "border-border/80 bg-muted/20 hover:bg-white/[0.035]"
+            }`}
+          >
+            <div
+              className={`text-sm font-medium ${
+                active ? "text-primary-foreground" : "text-foreground"
+              }`}
+            >
+              {option.title}
+            </div>
+            {option.description ? (
+              <div
+                className={`mt-1 text-xs leading-5 ${
+                  active ? "text-primary-foreground/80" : "text-muted-foreground"
+                }`}
+              >
+                {option.description}
+              </div>
+            ) : null}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+function Drawer({
+  title,
+  description,
+  onClose,
+  children,
+  onSave,
+  saveLabel,
+  maxWidthClass = "max-w-[760px]",
+}) {
+  return (
+    <motion.div
+      key={title}
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/68 p-4 backdrop-blur-md sm:p-6"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.18, ease: "easeOut" }}
+      onClick={onClose}
+    >
+      <motion.div
+        className={`flex max-h-[88vh] w-full ${maxWidthClass} flex-col overflow-hidden rounded-xl border border-white/8 bg-[linear-gradient(180deg,rgba(18,18,18,0.88),rgba(10,10,10,0.96))] shadow-[0_0_0_1px_rgba(255,255,255,0.02),0_40px_120px_rgba(0,0,0,0.45)] backdrop-blur-2xl`}
+        initial={{ opacity: 0, y: 18, scale: 0.985 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        exit={{ opacity: 0, y: 12, scale: 0.985 }}
+        transition={{ type: "spring", stiffness: 280, damping: 28 }}
+        onClick={(event) => event.stopPropagation()}
+      >
+        <div className="flex items-start justify-between border-b border-border/80 px-6 py-5">
+          <div>
+            <h2 className="text-xl font-semibold text-foreground">{title}</h2>
+            <p className="mt-1 text-sm text-muted-foreground">{description}</p>
+          </div>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="rounded-md text-muted-foreground hover:bg-muted/60 hover:text-foreground"
+            onClick={onClose}
+          >
+            <X className="size-4" />
+          </Button>
+        </div>
+
+        <div className="flex-1 overflow-y-auto px-6 py-5">{children}</div>
+
+        <div className="flex items-center justify-between border-t border-border/80 px-6 py-5">
+          <Button
+            type="button"
+            variant="outline"
+            className={secondaryButtonClass}
+            onClick={onClose}
+          >
+            Annulla
+          </Button>
+          {onSave ? (
+            <Button
+              type="button"
+              className={primaryButtonClass}
+              onClick={onSave}
+            >
+              {saveLabel}
+            </Button>
+          ) : null}
+        </div>
+      </motion.div>
+    </motion.div>
+  );
+}
+
+function App() {
+  const [activeSection, setActiveSection] = useState("Panoramica");
+  const [search, setSearch] = useState("");
+  const [slots, setSlots] = useState(initialSlots);
+  const [profiles, setProfiles] = useState(initialProfiles);
+  const [subscription, setSubscription] = useState(initialSubscription);
+  const [notifications, setNotifications] = useState(initialNotifications);
+  const [cycleLogs] = useState(initialCycleLogs);
+  const [selectedSlotId, setSelectedSlotId] = useState(initialSlots[0]?.id ?? null);
+  const [panel, setPanel] = useState({ type: null, source: null });
+  const [openStrategyQuestion, setOpenStrategyQuestion] = useState(0);
+  const [slotDraft, setSlotDraft] = useState(null);
+  const [profileDraft, setProfileDraft] = useState(null);
+  const [planDraft, setPlanDraft] = useState(initialSubscription);
+  const [exportDraft, setExportDraft] = useState({
+    scope: "ultimi_30_giorni",
+    includeEvents: true,
+    includeEquity: true,
+    includeBilling: false,
+  });
+
+  const selectedSlot =
+    slots.find((slot) => slot.id === selectedSlotId) ?? slots[0] ?? null;
+  const filteredSlots = slots.filter((slot) => {
+    const haystack = [
+      slot.slot,
+      slot.challenge,
+      slot.brokerAccount,
+      slot.propServer,
+      slot.brokerServer,
+    ]
+      .join(" ")
+      .toLowerCase();
+    return haystack.includes(search.toLowerCase());
+  });
+  const selectedSlotReadiness = selectedSlot
+    ? getMetaApiReadiness(selectedSlot)
+    : null;
+
+  const activeSlotsCount = slots.filter(
+    (slot) => slot.challengeState === "ATTIVA",
+  ).length;
+  const readySlotsCount = slots.filter(
+    (slot) => slot.challengeState === "PRONTA",
+  ).length;
+  const draftSlotsCount = slots.filter(
+    (slot) => slot.challengeState === "BOZZA",
+  ).length;
+  const connectedSlotsCount = slots.filter(
+    (slot) => hasPropConnection(slot) && hasBrokerConnection(slot),
+  ).length;
+  const parameterizedSlotsCount = slots.filter((slot) =>
+    hasStrategyParameters(slot),
+  ).length;
+  const phase1Count = slots.filter(
+    (slot) => slot.challengeState === "ATTIVA" && slot.phase === "Fase 1",
+  ).length;
+  const phase2Count = slots.filter(
+    (slot) => slot.challengeState === "ATTIVA" && slot.phase === "Fase 2",
+  ).length;
+  const fundedCount = slots.filter(
+    (slot) => slot.challengeState === "ATTIVA" && slot.phase === "Funded",
+  ).length;
+  const availableSlots = Math.max(subscription.slotsIncluded - slots.length, 0);
+
+  const summaryCards = [
+    {
+      key: "slots",
+      label: "Slot nel piano",
+      change: `${availableSlots} liberi`,
+      value: String(subscription.slotsIncluded),
+      note: `${slots.length} usati, ${availableSlots} ancora disponibili`,
+    },
+    {
+      key: "active",
+      label: "Slot operativi",
+      change: `${readySlotsCount} pronti`,
+      value: String(activeSlotsCount),
+      note: `${phase1Count} Fase 1, ${phase2Count} Fase 2, ${fundedCount} Funded`,
+    },
+    {
+      key: "cloud",
+      label: "Connessioni cloud",
+      change: `${connectedSlotsCount} complete`,
+      value: String(connectedSlotsCount),
+      note: `${parameterizedSlotsCount} slot con preset, ${draftSlotsCount} ancora in bozza`,
+    },
+  ];
+
+  const tradeLedger = [];
+  const closedCycleLogs = [...cycleLogs].sort(
+    (left, right) => new Date(left.closedAt) - new Date(right.closedAt),
+  );
+  const totalNetProfit = closedCycleLogs.reduce(
+    (sum, cycle) => sum + Number(cycle.netProfit || 0),
+    0,
+  );
+  const totalBrokerRealized = closedCycleLogs.reduce(
+    (sum, cycle) => sum + Number(cycle.brokerRealizedProfit || 0),
+    0,
+  );
+  const totalPropCost = closedCycleLogs.reduce(
+    (sum, cycle) => sum + Number(cycle.propCost || 0),
+    0,
+  );
+  const positiveCyclesCount = closedCycleLogs.filter(
+    (cycle) => Number(cycle.netProfit || 0) > 0,
+  ).length;
+  const averageNetProfit = closedCycleLogs.length
+    ? totalNetProfit / closedCycleLogs.length
+    : 0;
+  const lastClosedCycle = closedCycleLogs.at(-1) ?? null;
+  const equityCurvePoints = buildEquityCurve(closedCycleLogs);
+  const performanceCards = [
+    {
+      label: "Cicli chiusi",
+      value: String(closedCycleLogs.length),
+      note: `${positiveCyclesCount} con netto positivo`,
+    },
+    {
+      label: "Netto cumulato",
+      value: formatSignedCurrency(totalNetProfit),
+      note: `Broker ${formatSignedCurrency(totalBrokerRealized)} · Prop ${formatSignedCurrency(-totalPropCost)}`,
+    },
+    {
+      label: "Netto medio",
+      value: formatSignedCurrency(averageNetProfit),
+      note: lastClosedCycle
+        ? `Ultimo ciclo ${getCycleOutcomeLabel(lastClosedCycle.outcome)}`
+        : "In attesa del primo ciclo chiuso",
+    },
+  ];
+
+  function openPanel(type, source = null) {
+    setPanel({ type, source });
+  }
+
+  function closePanel() {
+    setPanel({ type: null, source: null });
+  }
+
+  function openAddSlot() {
+    setSlotDraft(createEmptySlot(slots.length + 1, ""));
+    openPanel("add-slot");
+  }
+
+  function openSlotParameters(slotId = selectedSlotId) {
+    const slot = slots.find((item) => item.id === slotId);
+    if (!slot) return;
+    const recommendedProfile = profiles[0];
+    const profile =
+      profiles.find((item) => item.name === slot.parametersProfile) ?? {
+        id: `profile_${slot.id}`,
+        name: slot.parametersProfile || recommendedProfile?.name || "Profilo consigliato",
+        riskPerTrade: slot.riskPerTrade || recommendedProfile?.riskPerTrade || 1.5,
+        maxDailyTrades:
+          slot.maxDailyTrades || recommendedProfile?.maxDailyTrades || 2,
+        orphanTimeoutMs:
+          slot.orphanTimeoutMs || recommendedProfile?.orphanTimeoutMs || 1000,
+      };
+
+    setSelectedSlotId(slot.id);
+    setSlotDraft({ ...slot });
+    setProfileDraft({ ...profile });
+    openPanel("slot-parameters");
+  }
+
+  function openSlotConnections(slotId = selectedSlotId) {
+    const slot = slots.find((item) => item.id === slotId);
+    if (!slot) return;
+    setSelectedSlotId(slot.id);
+    setSlotDraft({ ...slot });
+    openPanel("slot-connections");
+  }
+
+  function openActivateSlot(slotId = selectedSlotId) {
+    const slot = slots.find((item) => item.id === slotId);
+    if (!slot) return;
+    setSelectedSlotId(slot.id);
+    setSlotDraft({ ...slot });
+    openPanel("activate-slot");
+  }
+
+  function openSlotDetail(slotId = selectedSlotId) {
+    const slot = slots.find((item) => item.id === slotId);
+    if (!slot) return;
+    setSelectedSlotId(slot.id);
+    setSlotDraft({ ...slot });
+    openPanel("slot-detail");
+  }
+
+  function openSubscriptionPanel() {
+    setPlanDraft({ ...subscription });
+    openPanel("subscription");
+  }
+
+  function openNotificationsPanel() {
+    openPanel("notifications");
+  }
+
+  function openExportPanel(source) {
+    setExportDraft({
+      scope: "ultimi_30_giorni",
+      includeEvents: true,
+      includeEquity: true,
+      includeBilling: false,
+    });
+    openPanel("export", source);
+  }
+
+  function saveAddedSlot() {
+    if (!slotDraft) return;
+
+    const newSlot = {
+      ...slotDraft,
+      challengeState: getPreparationState(slotDraft),
+      updatedAt: nowHourMinute(),
+      status: normaliseStatus(slotDraft.phase),
+    };
+
+    setSlots((current) => [newSlot, ...current]);
+    setSelectedSlotId(newSlot.id);
+    setNotifications((current) => [
+      {
+        id: `notice_${Date.now()}`,
+        title: `${newSlot.slot} creato`,
+        body:
+          newSlot.challengeState === "PRONTA"
+            ? "Lo slot e pronto per l'attivazione: challenge, broker e parametri sono collegati."
+            : "Lo slot e stato aggiunto. Completa le credenziali prop e broker prima dell'attivazione.",
+      },
+      ...current,
+    ]);
+    closePanel();
+  }
+
+  function saveSlotConnections() {
+    if (!slotDraft) return;
+
+    const nextState = getPreparationState(slotDraft);
+
+    setSlots((current) =>
+      current.map((item) =>
+        item.id === slotDraft.id
+          ? {
+              ...item,
+              ...slotDraft,
+              challengeState: nextState,
+              status: normaliseStatus(slotDraft.phase),
+              updatedAt: nowHourMinute(),
+            }
+          : item,
+      ),
+    );
+
+    setNotifications((current) => [
+      {
+        id: `notice_${Date.now()}`,
+        title: `Connessioni aggiornate su ${slotDraft.slot}`,
+        body:
+          nextState === "PRONTA"
+            ? "Challenge e broker risultano completi e pronti per MetaApi."
+            : "Le credenziali sono state salvate. Completa entrambi i lati per portare lo slot in stato pronto.",
+      },
+      ...current,
+    ]);
+    closePanel();
+  }
+
+  function saveSlotParameters() {
+    if (!slotDraft || !profileDraft) return;
+
+    const profileName =
+      profileDraft.name.trim() ||
+      slotDraft.parametersProfile ||
+      profiles[0]?.name ||
+      "Profilo consigliato";
+    const updatedProfile = {
+      ...profileDraft,
+      name: profileName,
+      riskPerTrade: Number(profileDraft.riskPerTrade),
+      maxDailyTrades: Number(profileDraft.maxDailyTrades),
+      orphanTimeoutMs: Number(profileDraft.orphanTimeoutMs),
+    };
+
+    setProfiles((current) => {
+      const exists = current.some((item) => item.name === profileName);
+      if (exists) {
+        return current.map((item) =>
+          item.name === profileName ? updatedProfile : item,
+        );
+      }
+
+      return [...current, { ...updatedProfile, id: `profile_${Date.now()}` }];
+    });
+
+    setSlots((current) =>
+      current.map((item) =>
+        item.id === slotDraft.id
+          ? (() => {
+              const updatedSlot = {
+                ...item,
+                parametersProfile: profileName,
+                target:
+                  item.phase === "Fase 1"
+                    ? Number(slotDraft.hedgeBaseTarget)
+                    : item.target,
+                hedgeBaseTarget: Number(slotDraft.hedgeBaseTarget),
+                brokerStartEquity: Number(slotDraft.brokerStartEquity),
+                riskPerTrade: updatedProfile.riskPerTrade,
+                maxDailyTrades: updatedProfile.maxDailyTrades,
+                orphanTimeoutMs: updatedProfile.orphanTimeoutMs,
+                updatedAt: nowHourMinute(),
+              };
+
+              return {
+                ...updatedSlot,
+                challengeState: getPreparationState(updatedSlot),
+              };
+            })()
+          : item,
+      ),
+    );
+
+    setNotifications((current) => [
+      {
+        id: `notice_${Date.now()}`,
+        title: `Parametri salvati su ${slotDraft.slot}`,
+        body: `Il profilo ${profileName} e stato applicato allo slot selezionato.`,
+      },
+      ...current,
+    ]);
+    closePanel();
+  }
+
+  function saveActivation() {
+    if (!slotDraft) return;
+    const missing = [];
+
+    if (!hasPropConnection(slotDraft)) {
+      missing.push("challenge prop");
+    }
+
+    if (!hasBrokerConnection(slotDraft)) {
+      missing.push("broker");
+    }
+
+    if (!hasStrategyParameters(slotDraft)) {
+      missing.push("parametri trading");
+    }
+
+    if (missing.length > 0) {
+      setNotifications((current) => [
+        {
+          id: `notice_${Date.now()}`,
+          title: `Impossibile attivare ${slotDraft.slot}`,
+          body: `Completa prima: ${missing.join(", ")}.`,
+        },
+        ...current,
+      ]);
+      return;
+    }
+
+    setSlots((current) =>
+      current.map((item) =>
+        item.id === slotDraft.id
+          ? {
+              ...item,
+              ...slotDraft,
+              challengeState: "ATTIVA",
+              status: normaliseStatus(slotDraft.phase),
+              cycleBalance:
+                Number(slotDraft.cycleBalance) === 0 ? 0 : Number(slotDraft.cycleBalance),
+              updatedAt: nowHourMinute(),
+            }
+          : item,
+      ),
+    );
+
+    setNotifications((current) => [
+      {
+        id: `notice_${Date.now()}`,
+        title: `${slotDraft.slot} attivato`,
+        body: `La challenge ${slotDraft.challenge} e ora attiva sul broker ${slotDraft.brokerAccount}.`,
+      },
+      ...current,
+    ]);
+    closePanel();
+  }
+
+  function saveSlotDetail() {
+    if (!slotDraft) return;
+
+    setSlots((current) =>
+      current.map((item) =>
+        item.id === slotDraft.id
+          ? (() => {
+              const updatedSlot = {
+                ...item,
+                ...slotDraft,
+                propEquity: Number(slotDraft.propEquity),
+                brokerEquity: Number(slotDraft.brokerEquity),
+                target: Number(slotDraft.target),
+                multiplier: Number(slotDraft.multiplier),
+                cycleBalance: Number(slotDraft.cycleBalance),
+                status: slotDraft.status,
+                updatedAt: nowHourMinute(),
+              };
+
+              return {
+                ...updatedSlot,
+                challengeState: getPreparationState(updatedSlot),
+              };
+            })()
+          : item,
+      ),
+    );
+    closePanel();
+  }
+
+  function saveSubscription() {
+    setSubscription({
+      ...planDraft,
+      slotsIncluded: Number(planDraft.slotsIncluded),
+    });
+    setNotifications((current) => [
+      {
+        id: `notice_${Date.now()}`,
+        title: "Abbonamento aggiornato",
+        body: `Il piano ${planDraft.planName} e stato salvato con ${planDraft.slotsIncluded} slot inclusi.`,
+      },
+      ...current,
+    ]);
+    closePanel();
+  }
+
+  function saveExport() {
+    setNotifications((current) => [
+      {
+        id: `notice_${Date.now()}`,
+        title: `Export ${panel.source ?? "dashboard"} richiesto`,
+        body: `Scope ${exportDraft.scope.replaceAll("_", " ")} con opzioni personalizzate.`,
+      },
+      ...current,
+    ]);
+    closePanel();
+  }
+
+  function toggleSlotPower(slotId) {
+    const slot = slots.find((item) => item.id === slotId);
+    if (!slot) return;
+
+    setSelectedSlotId(slot.id);
+
+    if (slot.challengeState === "ATTIVA") {
+      const nextState =
+        hasPropConnection(slot) &&
+        hasBrokerConnection(slot) &&
+        hasStrategyParameters(slot)
+          ? "PRONTA"
+          : "BOZZA";
+
+      setSlots((current) =>
+        current.map((item) =>
+          item.id === slot.id
+            ? {
+                ...item,
+                challengeState: nextState,
+                updatedAt: nowHourMinute(),
+              }
+            : item,
+        ),
+      );
+
+      setNotifications((current) => [
+        {
+          id: `notice_${Date.now()}`,
+          title: `${slot.slot} spento`,
+          body: "Lo slot e stato fermato. Puoi riattivarlo quando vuoi dalla card.",
+        },
+        ...current,
+      ]);
+      return;
+    }
+
+    if (!hasPropConnection(slot) || !hasBrokerConnection(slot)) {
+      openSlotConnections(slot.id);
+      return;
+    }
+
+    if (!hasStrategyParameters(slot)) {
+      openSlotParameters(slot.id);
+      return;
+    }
+
+    setSlots((current) =>
+      current.map((item) =>
+        item.id === slot.id
+          ? {
+              ...item,
+              challengeState: "ATTIVA",
+              status: normaliseStatus(slot.phase),
+              updatedAt: nowHourMinute(),
+            }
+          : item,
+      ),
+    );
+
+    setNotifications((current) => [
+      {
+        id: `notice_${Date.now()}`,
+        title: `${slot.slot} acceso`,
+        body: `Lo slot ${slot.challenge} e stato portato online dal toggle rapido.`,
+      },
+      ...current,
+    ]);
+  }
+
+  function renderDrawer() {
+    if (panel.type === "add-slot" && slotDraft) {
+      return (
+        <Drawer
+          title="Aggiungi slot"
+          description="Primo passo: crea lo slot. Dopo ti guideremo a collegare challenge, broker e preset."
+          onClose={closePanel}
+          onSave={saveAddedSlot}
+          saveLabel="Crea slot"
+        >
+          <div className="space-y-5">
+            <Field label="Nome slot">
+              <input
+                className={inputClass}
+                value={slotDraft.slot}
+                onChange={(event) =>
+                  setSlotDraft((current) => ({
+                    ...current,
+                    slot: event.target.value,
+                  }))
+                }
+              />
+            </Field>
+            <Field label="Challenge prop">
+              <OptionCardGroup
+                options={challengeOptions}
+                value={slotDraft.challenge}
+                onChange={(nextValue) =>
+                  setSlotDraft((current) => ({
+                    ...current,
+                    challenge: nextValue,
+                  }))
+                }
+              />
+            </Field>
+            <div className="rounded-[16px] border border-primary/10 bg-primary/5 p-4">
+              <div className="text-sm font-medium text-white">
+                Cosa succede dopo
+              </div>
+              <div className="mt-3 space-y-2 text-sm text-zinc-400">
+                <div>1. Crei lo slot e scegli la challenge.</div>
+                <div>2. Colleghi la challenge con login, password e server.</div>
+                <div>3. Colleghi il broker con login, password e server.</div>
+                <div>4. Usi il preset consigliato e attivi la challenge.</div>
+              </div>
+            </div>
+          </div>
+        </Drawer>
+      );
+    }
+
+    if (panel.type === "slot-connections" && slotDraft) {
+      const readiness = getMetaApiReadiness(slotDraft);
+      const readinessClass =
+        readiness.tone === "ready"
+          ? "border-primary/20 bg-primary/10 text-primary"
+          : readiness.tone === "partial"
+            ? "border-amber-500/20 bg-amber-500/10 text-amber-300"
+            : "border-primary/20 bg-primary/10 text-primary";
+
+      return (
+        <Drawer
+          title={`Collega conti · ${slotDraft.slot}`}
+          description="Configura i due lati dello slot. Appena login, password e server sono completi, lo slot diventa pronto per MetaApi."
+          onClose={closePanel}
+          onSave={saveSlotConnections}
+          saveLabel="Salva connessioni"
+          maxWidthClass="max-w-[840px]"
+        >
+          <div className="space-y-5">
+            <div className={`rounded-xl border px-4 py-3 text-sm ${readinessClass}`}>
+              {readiness.label}
+            </div>
+
+            <div className="rounded-[16px] border border-white/8 bg-white/[0.03] p-4">
+              <div className="mx-auto max-w-[620px]">
+                <div className="text-center text-sm font-medium text-white">Challenge size</div>
+                <div className="mt-4">
+                  <OptionCardGroup
+                    options={challengeOptions}
+                    value={slotDraft.challenge}
+                    onChange={(nextValue) =>
+                      setSlotDraft((current) => ({
+                        ...current,
+                        challenge: nextValue,
+                      }))
+                    }
+                    columns="md:grid-cols-3"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="grid gap-4 xl:grid-cols-2">
+              <div className="rounded-[16px] border border-white/8 bg-white/[0.03] p-4">
+                <div className="text-sm font-medium text-white">Challenge prop</div>
+                <div className="mt-4 grid gap-4">
+                  <Field label="Login challenge">
+                    <input
+                      className={inputClass}
+                      value={slotDraft.propLogin}
+                      onChange={(event) =>
+                        setSlotDraft((current) => ({
+                          ...current,
+                          propLogin: event.target.value,
+                        }))
+                      }
+                    />
+                  </Field>
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <Field label="Password challenge">
+                      <input
+                        className={inputClass}
+                        type="password"
+                        value={slotDraft.propPassword}
+                        onChange={(event) =>
+                          setSlotDraft((current) => ({
+                            ...current,
+                            propPassword: event.target.value,
+                          }))
+                        }
+                      />
+                    </Field>
+                    <Field label="Server challenge">
+                      <input
+                        className={inputClass}
+                        value={slotDraft.propServer}
+                        onChange={(event) =>
+                          setSlotDraft((current) => ({
+                            ...current,
+                            propServer: event.target.value,
+                          }))
+                        }
+                      />
+                    </Field>
+                  </div>
+                </div>
+              </div>
+
+              <div className="rounded-[16px] border border-white/8 bg-white/[0.03] p-4">
+                <div className="text-sm font-medium text-white">Broker</div>
+                <div className="mt-4 grid gap-4">
+                  <Field label="Login broker">
+                    <input
+                      className={inputClass}
+                      value={slotDraft.brokerLogin}
+                      onChange={(event) =>
+                        setSlotDraft((current) => ({
+                          ...current,
+                          brokerLogin: event.target.value,
+                        }))
+                      }
+                    />
+                  </Field>
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <Field label="Password broker">
+                      <input
+                        className={inputClass}
+                        type="password"
+                        value={slotDraft.brokerPassword}
+                        onChange={(event) =>
+                          setSlotDraft((current) => ({
+                            ...current,
+                            brokerPassword: event.target.value,
+                          }))
+                        }
+                      />
+                    </Field>
+                    <Field label="Server broker">
+                      <input
+                        className={inputClass}
+                        value={slotDraft.brokerServer}
+                        onChange={(event) =>
+                          setSlotDraft((current) => ({
+                            ...current,
+                            brokerServer: event.target.value,
+                          }))
+                        }
+                      />
+                    </Field>
+                  </div>
+                  <Field label="Nome broker">
+                    <input
+                      className={inputClass}
+                      value={slotDraft.brokerAccount}
+                      onChange={(event) =>
+                        setSlotDraft((current) => ({
+                          ...current,
+                          brokerAccount: event.target.value,
+                        }))
+                      }
+                    />
+                  </Field>
+                </div>
+              </div>
+            </div>
+          </div>
+        </Drawer>
+      );
+    }
+
+    if (panel.type === "slot-parameters" && slotDraft && profileDraft) {
+      const brokerGuardrail = calculateBrokerLossGuardrail(
+        slotDraft.brokerStartEquity,
+      );
+      const phase1PassLoss = calculatePhase1PassLoss(slotDraft.hedgeBaseTarget);
+      const phase2PassLoss = calculatePhase2PassLoss(slotDraft.hedgeBaseTarget);
+      const phaseChecks = [
+        {
+          label: "Perdita se passi Fase 1",
+          value: phase1PassLoss,
+          withinLimit: phase1PassLoss <= brokerGuardrail,
+        },
+        {
+          label: "Perdita se passi Fase 2",
+          value: phase2PassLoss,
+          withinLimit: phase2PassLoss <= brokerGuardrail,
+        },
+      ];
+
+      return (
+        <Drawer
+          title={`Parametri trading · ${slotDraft.slot}`}
+          description="Applica il preset consigliato. Le opzioni avanzate qui sotto sono facoltative."
+          onClose={closePanel}
+          onSave={saveSlotParameters}
+          saveLabel="Salva parametri"
+        >
+          <div className="space-y-5">
+            <div className="rounded-[14px] border border-primary/10 bg-primary/5 p-4 text-sm text-zinc-300">
+              Se non vuoi toccare nulla, lascia il preset consigliato e premi solo
+              <span className="font-medium text-white"> Salva parametri</span>.
+            </div>
+            <Field label="Nome profilo">
+              <input
+                className={inputClass}
+                value={profileDraft.name}
+                onChange={(event) =>
+                  setProfileDraft((current) => ({
+                    ...current,
+                    name: event.target.value,
+                  }))
+                }
+              />
+            </Field>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Field
+                label="Valore broker a inizio challenge ($)"
+                hint="Base del controllo 30%"
+              >
+                <input
+                  className={inputClass}
+                  type="number"
+                  value={slotDraft.brokerStartEquity}
+                  onChange={(event) =>
+                    setSlotDraft((current) => ({
+                      ...current,
+                      brokerStartEquity: Number(event.target.value),
+                    }))
+                  }
+                />
+              </Field>
+              <Field
+                label="Target hedge base Fase 1 ($)"
+                hint="Usato per stimare Fase 1 e Fase 2"
+              >
+                <input
+                  className={inputClass}
+                  type="number"
+                  value={slotDraft.hedgeBaseTarget}
+                  onChange={(event) =>
+                    setSlotDraft((current) => ({
+                      ...current,
+                      hedgeBaseTarget: Number(event.target.value),
+                    }))
+                  }
+                />
+              </Field>
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Field label="Rischio per trade (%)">
+                <input
+                  className={inputClass}
+                  type="number"
+                  step="0.1"
+                  value={profileDraft.riskPerTrade}
+                  onChange={(event) =>
+                    setProfileDraft((current) => ({
+                      ...current,
+                      riskPerTrade: Number(event.target.value),
+                    }))
+                  }
+                />
+              </Field>
+              <Field label="Trade massimi al giorno">
+                <input
+                  className={inputClass}
+                  type="number"
+                  value={profileDraft.maxDailyTrades}
+                  onChange={(event) =>
+                    setProfileDraft((current) => ({
+                      ...current,
+                      maxDailyTrades: Number(event.target.value),
+                    }))
+                  }
+                />
+              </Field>
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Field label="Timeout orphan (ms)">
+                <input
+                  className={inputClass}
+                  type="number"
+                  value={profileDraft.orphanTimeoutMs}
+                  onChange={(event) =>
+                    setProfileDraft((current) => ({
+                      ...current,
+                      orphanTimeoutMs: Number(event.target.value),
+                    }))
+                  }
+                />
+              </Field>
+              <div className="rounded-lg border border-border/80 bg-muted/20 px-4 py-3">
+                <div className="text-sm font-medium text-foreground">
+                  Filtro news sul funded
+                </div>
+                <div className="mt-1 text-sm leading-6 text-muted-foreground">
+                  Non e configurabile dall'utente. Sul funded bloccheremo in automatico il trading durante news ad alto impatto.
+                </div>
+              </div>
+            </div>
+            <div className="rounded-[14px] border border-primary/10 bg-primary/5 p-4">
+              <div className="flex items-start gap-3">
+                <div className="mt-0.5 rounded-lg bg-primary/10 p-2 text-primary">
+                  <CircleAlert className="size-4" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="text-sm font-medium text-white">
+                    Suggerimento guardrail hedging
+                  </div>
+                  <div className="mt-1 text-sm leading-6 text-zinc-400">
+                    La perdita stimata se passi Fase 1 o Fase 2 non dovrebbe
+                    superare il 30% del valore broker a inizio challenge.
+                  </div>
+                  <div className="mt-4 rounded-lg border border-white/8 bg-[#070b14] px-3 py-3 text-sm">
+                    <div className="flex items-center justify-between">
+                      <span className="text-zinc-500">
+                        Limite consigliato broker
+                      </span>
+                      <span className="font-semibold text-white">
+                        {formatCurrency(brokerGuardrail)}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                    {phaseChecks.map((check) => (
+                      <div
+                        key={check.label}
+                        className={`rounded-lg border px-3 py-3 text-sm ${
+                          check.withinLimit
+                            ? "border-primary/16 bg-primary/8"
+                            : "border-amber-500/20 bg-amber-500/10"
+                        }`}
+                      >
+                        <div className="text-zinc-400">{check.label}</div>
+                        <div className="mt-1 text-lg font-semibold text-white">
+                          {formatCurrency(check.value)}
+                        </div>
+                        <div
+                          className={`mt-2 text-xs font-medium ${
+                            check.withinLimit
+                              ? "text-primary"
+                              : "text-amber-300"
+                          }`}
+                        >
+                          {check.withinLimit
+                            ? "Dentro il 30% del broker iniziale"
+                            : "Supera il 30% del broker iniziale"}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </Drawer>
+      );
+    }
+
+    if (panel.type === "activate-slot" && slotDraft) {
+      const activationChecklist = [
+        {
+          label: "Challenge collegata",
+          done: hasPropConnection(slotDraft),
+        },
+        {
+          label: "Broker collegato",
+          done: hasBrokerConnection(slotDraft),
+        },
+        {
+          label: "Parametri applicati",
+          done: hasStrategyParameters(slotDraft),
+        },
+      ];
+
+      return (
+        <Drawer
+          title={`Attiva challenge · ${slotDraft.slot}`}
+          description="Completa gli ultimi passaggi e porta lo slot online."
+          onClose={closePanel}
+          onSave={saveActivation}
+          saveLabel={slotDraft.challengeState === "ATTIVA" ? "Aggiorna stato" : "Attiva ora"}
+        >
+          <div className="space-y-5">
+            <div className="rounded-xl border border-white/8 bg-white/[0.03] p-4">
+              <div className="text-sm text-zinc-500">
+                Challenge
+              </div>
+              <div className="mt-1 text-lg font-semibold text-white">
+                {slotDraft.challenge}
+              </div>
+              <div className="mt-1 text-sm text-zinc-500">
+                Broker collegato: {slotDraft.brokerAccount || "Non collegato"}
+              </div>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {activationChecklist.map((item) => (
+                  <Badge
+                    key={item.label}
+                    className={
+                      item.done
+                        ? "border-primary/20 bg-primary/10 text-primary hover:bg-primary/10"
+                        : "border-amber-500/20 bg-amber-500/10 text-amber-300 hover:bg-amber-500/10"
+                    }
+                  >
+                    {item.label}
+                  </Badge>
+                ))}
+              </div>
+            </div>
+            <div className="rounded-xl border border-white/8 bg-white/[0.03] px-4 py-3 text-sm text-zinc-400">
+              Prima dell'attivazione servono entrambe le connessioni complete. Se manca qualcosa, salva i conti e riprova.
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Field label="Fase attuale">
+                <OptionCardGroup
+                  options={phaseOptions}
+                  value={slotDraft.phase}
+                  onChange={(nextValue) =>
+                    setSlotDraft((current) => ({
+                      ...current,
+                      phase: nextValue,
+                    }))
+                  }
+                  columns="grid-cols-1"
+                />
+              </Field>
+              <Field label="Stato MetaApi">
+                <div className="flex h-11 items-center rounded-lg border border-white/10 bg-[#0d1120] px-3 text-sm text-zinc-300">
+                  {getMetaApiReadiness(slotDraft).label}
+                </div>
+              </Field>
+            </div>
+            <Field label="Posizione ciclo" hint="-100 fail · 0 start · +100 pass">
+              <input
+                className={inputClass}
+                type="range"
+                min="-100"
+                max="100"
+                value={slotDraft.cycleBalance}
+                onChange={(event) =>
+                  setSlotDraft((current) => ({
+                    ...current,
+                    cycleBalance: Number(event.target.value),
+                  }))
+                }
+              />
+            </Field>
+            <CycleBalanceBar value={slotDraft.cycleBalance} />
+            <Button
+              type="button"
+              variant="outline"
+              className={`w-full ${secondaryButtonClass}`}
+              onClick={() => openSlotConnections(slotDraft.id)}
+            >
+              Collega o modifica i conti
+            </Button>
+          </div>
+        </Drawer>
+      );
+    }
+
+    if (panel.type === "slot-detail" && slotDraft) {
+      const slotTrades = tradeLedger.filter((trade) => trade.slotId === slotDraft.id);
+      const propTrades = slotTrades.filter((trade) => trade.accountType === "PROP");
+      const brokerTrades = slotTrades.filter((trade) => trade.accountType === "BROKER");
+      const slotReadiness = getMetaApiReadiness(slotDraft);
+      const slotConnectionRows = [
+        {
+          label: "Challenge prop",
+          value: hasPropConnection(slotDraft)
+            ? `${maskLogin(slotDraft.propLogin)} · ${slotDraft.propServer}`
+            : "Da collegare",
+          tone: hasPropConnection(slotDraft) ? "text-primary" : "text-zinc-400",
+        },
+        {
+          label: "Broker",
+          value: hasBrokerConnection(slotDraft)
+            ? `${slotDraft.brokerAccount} · ${slotDraft.brokerServer}`
+            : "Da collegare",
+          tone: hasBrokerConnection(slotDraft) ? "text-primary" : "text-zinc-400",
+        },
+        {
+          label: "Preset",
+          value: hasStrategyParameters(slotDraft)
+            ? slotDraft.parametersProfile
+            : "Non ancora salvato",
+          tone: hasStrategyParameters(slotDraft) ? "text-primary" : "text-zinc-400",
+        },
+      ];
+
+      return (
+        <Drawer
+          title={`Dettaglio slot · ${slotDraft.slot}`}
+          description="Vista slot: stato corrente, trade eseguiti e monitoraggio live quando i dati reali saranno disponibili."
+          onClose={closePanel}
+          maxWidthClass="max-w-[1180px]"
+        >
+          <div className="space-y-5">
+            <div className="grid gap-5 xl:grid-cols-[1.15fr_0.85fr]">
+              <div className="rounded-[16px] border border-white/8 bg-[linear-gradient(180deg,rgba(133,176,15,0.18),rgba(7,8,5,0.96))] p-5">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div className="flex items-start gap-3">
+                    <div className="flex size-11 shrink-0 items-center justify-center rounded-[12px] bg-primary/12 text-primary">
+                      <FundingPipsLogo className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <div className="text-xs uppercase tracking-[0.16em] text-zinc-500">
+                        Slot operativo
+                      </div>
+                      <div className="mt-1 text-2xl font-semibold text-white">
+                        {slotDraft.challenge}
+                      </div>
+                      <div className="mt-1 text-sm text-zinc-400">
+                        Broker collegato: {slotDraft.brokerAccount || "Da collegare"}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <ChallengeStateBadge value={slotDraft.challengeState} />
+                    <StatusBadge value={slotDraft.status} />
+                  </div>
+                </div>
+
+                <div className="mt-5 grid gap-3 sm:grid-cols-3">
+                  <div className="rounded-[12px] border border-white/8 bg-[#070b14] px-4 py-3">
+                    <div className="text-xs uppercase tracking-[0.14em] text-zinc-500">
+                      Fase corrente
+                    </div>
+                    <div className="mt-2 text-base font-semibold text-white">{slotDraft.phase}</div>
+                  </div>
+                  <div className="rounded-[12px] border border-white/8 bg-[#070b14] px-4 py-3">
+                    <div className="text-xs uppercase tracking-[0.14em] text-zinc-500">
+                      Target hedge
+                    </div>
+                    <div className="mt-2 text-base font-semibold text-white">
+                      {formatCurrency(getEffectiveCycleTarget(slotDraft))}
+                    </div>
+                  </div>
+                  <div className="rounded-[12px] border border-white/8 bg-[#070b14] px-4 py-3">
+                    <div className="text-xs uppercase tracking-[0.14em] text-zinc-500">
+                      Moltiplicatore
+                    </div>
+                    <div className="mt-2 text-base font-semibold text-white">
+                      {formatMultiplier(slotDraft.multiplier)}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mt-5 rounded-[14px] border border-white/8 bg-[#070b14] p-4">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div>
+                      <div className="text-sm font-medium text-white">Posizione ciclo</div>
+                      <div className="mt-1 text-sm text-zinc-500">
+                        Indicatore di avanzamento tra fallimento e pass della challenge.
+                      </div>
+                    </div>
+                    <div className="text-sm font-medium text-zinc-300">
+                      {slotDraft.cycleBalance === 0
+                        ? "Centro"
+                        : slotDraft.cycleBalance > 0
+                          ? `+${slotDraft.cycleBalance}% verso pass`
+                          : `${slotDraft.cycleBalance}% verso fail`}
+                    </div>
+                  </div>
+                  <div className="mt-4">
+                    <CycleBalanceBar value={slotDraft.cycleBalance} />
+                  </div>
+                </div>
+
+                <div className="mt-5 flex flex-wrap gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className={secondaryButtonClass}
+                    onClick={() => openSlotConnections(slotDraft.id)}
+                  >
+                    Modifica conti
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className={secondaryButtonClass}
+                    onClick={() => openSlotParameters(slotDraft.id)}
+                  >
+                    Modifica preset
+                  </Button>
+                </div>
+              </div>
+
+              <div className="grid gap-5">
+                <div className="rounded-[16px] border border-white/8 bg-white/[0.03] p-5">
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <div className="text-sm font-medium text-white">Monitor live</div>
+                      <div className="mt-1 text-sm text-zinc-500">
+                        Unrealized PnL e connessioni appena il backend inizia a ricevere stream.
+                      </div>
+                    </div>
+                    <Badge className="border-primary/20 bg-primary/10 text-primary hover:bg-primary/10">
+                      {slotReadiness.label}
+                    </Badge>
+                  </div>
+                  <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                    <div className="rounded-[12px] border border-white/8 bg-[#070b14] px-4 py-4">
+                      <div className="text-xs uppercase tracking-[0.14em] text-zinc-500">
+                        Unrealized PnL prop
+                      </div>
+                      <div className="mt-2 text-lg font-semibold text-white">
+                        In attesa stream live
+                      </div>
+                      <div className="mt-2 text-sm text-zinc-500">
+                        MetaApi mostrera qui la perdita o l'utile flottante della challenge.
+                      </div>
+                    </div>
+                    <div className="rounded-[12px] border border-white/8 bg-[#070b14] px-4 py-4">
+                      <div className="text-xs uppercase tracking-[0.14em] text-zinc-500">
+                        Unrealized PnL broker
+                      </div>
+                      <div className="mt-2 text-lg font-semibold text-white">
+                        In attesa stream live
+                      </div>
+                      <div className="mt-2 text-sm text-zinc-500">
+                        Qui vedrai il lato broker separato dalla prop, in tempo reale.
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="rounded-[16px] border border-white/8 bg-white/[0.03] p-5">
+                  <div className="text-sm font-medium text-white">Connessioni dello slot</div>
+                  <div className="mt-4 space-y-3">
+                    {slotConnectionRows.map((item) => (
+                      <div
+                        key={item.label}
+                        className="rounded-[12px] border border-white/8 bg-[#070b14] px-4 py-3"
+                      >
+                        <div className="text-xs uppercase tracking-[0.14em] text-zinc-500">
+                          {item.label}
+                        </div>
+                        <div className={`mt-2 text-sm font-medium ${item.tone}`}>{item.value}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="grid gap-5 xl:grid-cols-2">
+              <div className="rounded-[14px] border border-white/8 bg-white/[0.03] p-4">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <div className="text-sm font-medium text-white">
+                      Trade challenge prop
+                    </div>
+                    <div className="mt-1 text-sm text-zinc-500">
+                      Asset, lot size, direzione e risultato lato prop.
+                    </div>
+                  </div>
+                  <Badge className="border-white/10 bg-white/6 text-zinc-300 hover:bg-white/6">
+                    {propTrades.length} trade
+                  </Badge>
+                </div>
+                {propTrades.length > 0 ? (
+                  <div className="mt-4 overflow-hidden rounded-[12px] border border-white/8">
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="border-white/8 hover:bg-transparent">
+                          <TableHead className="text-xs uppercase tracking-[0.14em] text-zinc-500">Asset</TableHead>
+                          <TableHead className="text-xs uppercase tracking-[0.14em] text-zinc-500">Lotti</TableHead>
+                          <TableHead className="text-xs uppercase tracking-[0.14em] text-zinc-500">Direzione</TableHead>
+                          <TableHead className="text-xs uppercase tracking-[0.14em] text-zinc-500">Realizzato</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {propTrades.map((trade) => (
+                          <TableRow key={trade.id} className="border-white/8 hover:bg-white/[0.02]">
+                            <TableCell className="text-white">{trade.symbol}</TableCell>
+                            <TableCell className="text-zinc-400">{trade.lotSize}</TableCell>
+                            <TableCell className="text-zinc-400">{trade.direction}</TableCell>
+                            <TableCell className="text-zinc-400">{trade.realizedPnl}</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                ) : (
+                  <div className="mt-4 rounded-[12px] border border-dashed border-white/10 px-4 py-6 text-sm text-zinc-500">
+                    Nessun trade prop disponibile ancora. Qui vedrai ogni esecuzione con asset, direzione, lot size e PnL realizzato.
+                  </div>
+                )}
+              </div>
+
+              <div className="rounded-[14px] border border-white/8 bg-white/[0.03] p-4">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <div className="text-sm font-medium text-white">
+                      Trade broker
+                    </div>
+                    <div className="mt-1 text-sm text-zinc-500">
+                      Asset, lot size, direzione e risultato lato broker.
+                    </div>
+                  </div>
+                  <Badge className="border-white/10 bg-white/6 text-zinc-300 hover:bg-white/6">
+                    {brokerTrades.length} trade
+                  </Badge>
+                </div>
+                {brokerTrades.length > 0 ? (
+                  <div className="mt-4 overflow-hidden rounded-[12px] border border-white/8">
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="border-white/8 hover:bg-transparent">
+                          <TableHead className="text-xs uppercase tracking-[0.14em] text-zinc-500">Asset</TableHead>
+                          <TableHead className="text-xs uppercase tracking-[0.14em] text-zinc-500">Lotti</TableHead>
+                          <TableHead className="text-xs uppercase tracking-[0.14em] text-zinc-500">Direzione</TableHead>
+                          <TableHead className="text-xs uppercase tracking-[0.14em] text-zinc-500">Realizzato</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {brokerTrades.map((trade) => (
+                          <TableRow key={trade.id} className="border-white/8 hover:bg-white/[0.02]">
+                            <TableCell className="text-white">{trade.symbol}</TableCell>
+                            <TableCell className="text-zinc-400">{trade.lotSize}</TableCell>
+                            <TableCell className="text-zinc-400">{trade.direction}</TableCell>
+                            <TableCell className="text-zinc-400">{trade.realizedPnl}</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                ) : (
+                  <div className="mt-4 rounded-[12px] border border-dashed border-white/10 px-4 py-6 text-sm text-zinc-500">
+                    Nessun trade broker disponibile ancora. Quando il bot esegue ordini, qui li vedrai separati dal lato prop.
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="rounded-[14px] border border-primary/10 bg-primary/5 p-4 text-sm text-zinc-300">
+              Appena il backend colleghera MetaApi, questa schermata mostrera in tempo reale:
+              <span className="font-medium text-white">
+                {" "}asset tradato, lot size, direzione, profitto/perdita realizzata e unrealized PnL
+              </span>
+              {" "}separati tra challenge prop e broker.
+            </div>
+          </div>
+        </Drawer>
+      );
+    }
+
+    if (panel.type === "subscription") {
+      return (
+        <Drawer
+          title="Piano e abbonamento"
+          description="Gestisci il piano SaaS e il numero di slot disponibili per il cliente."
+          onClose={closePanel}
+          onSave={saveSubscription}
+          saveLabel="Salva piano"
+        >
+          <div className="space-y-5">
+            <Field label="Nome piano">
+              <input
+                className={inputClass}
+                value={planDraft.planName}
+                onChange={(event) =>
+                  setPlanDraft((current) => ({
+                    ...current,
+                    planName: event.target.value,
+                  }))
+                }
+              />
+            </Field>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Field label="Slot inclusi">
+                <input
+                  className={inputClass}
+                  type="number"
+                  value={planDraft.slotsIncluded}
+                  onChange={(event) =>
+                    setPlanDraft((current) => ({
+                      ...current,
+                      slotsIncluded: Number(event.target.value),
+                    }))
+                  }
+                />
+              </Field>
+              <Field label="Cadenza">
+                <OptionCardGroup
+                  options={billingCadenceOptions}
+                  value={planDraft.billingCadence}
+                  onChange={(nextValue) =>
+                    setPlanDraft((current) => ({
+                      ...current,
+                      billingCadence: nextValue,
+                    }))
+                  }
+                  columns="grid-cols-1"
+                />
+              </Field>
+            </div>
+            <Field label="Data rinnovo">
+              <input
+                className={inputClass}
+                value={planDraft.renewalDate}
+                onChange={(event) =>
+                  setPlanDraft((current) => ({
+                    ...current,
+                    renewalDate: event.target.value,
+                  }))
+                }
+              />
+            </Field>
+          </div>
+        </Drawer>
+      );
+    }
+
+    if (panel.type === "notifications") {
+      return (
+        <Drawer
+          title="Notifiche"
+          description="Aggiornamenti recenti su slot, challenge e parametri."
+          onClose={closePanel}
+        >
+          <div className="space-y-3">
+            {notifications.map((notice) => (
+              <div
+                key={notice.id}
+                className="rounded-xl border border-white/8 bg-white/[0.03] p-4"
+              >
+                <div className="text-sm font-medium text-white">{notice.title}</div>
+                <div className="mt-1 text-sm leading-6 text-zinc-500">{notice.body}</div>
+              </div>
+            ))}
+          </div>
+        </Drawer>
+      );
+    }
+
+    if (panel.type === "export") {
+      return (
+        <Drawer
+          title={`Esporta dati · ${panel.source ?? "dashboard"}`}
+          description="Configura l'output dell'export per dashboard, slot o analytics."
+          onClose={closePanel}
+          onSave={saveExport}
+          saveLabel="Conferma export"
+        >
+          <div className="space-y-5">
+            <Field label="Scope export">
+              <OptionCardGroup
+                options={exportScopeOptions}
+                value={exportDraft.scope}
+                onChange={(nextValue) =>
+                  setExportDraft((current) => ({
+                    ...current,
+                    scope: nextValue,
+                  }))
+                }
+                columns="sm:grid-cols-2"
+              />
+            </Field>
+            <label className="flex items-center justify-between rounded-xl border border-white/8 bg-white/[0.03] px-4 py-3">
+              <span className="text-sm text-zinc-300">Includi eventi slot</span>
+              <input
+                type="checkbox"
+                checked={exportDraft.includeEvents}
+                onChange={(event) =>
+                  setExportDraft((current) => ({
+                    ...current,
+                    includeEvents: event.target.checked,
+                  }))
+                }
+              />
+            </label>
+            <label className="flex items-center justify-between rounded-xl border border-white/8 bg-white/[0.03] px-4 py-3">
+              <span className="text-sm text-zinc-300">Includi metriche equity</span>
+              <input
+                type="checkbox"
+                checked={exportDraft.includeEquity}
+                onChange={(event) =>
+                  setExportDraft((current) => ({
+                    ...current,
+                    includeEquity: event.target.checked,
+                  }))
+                }
+              />
+            </label>
+            <label className="flex items-center justify-between rounded-xl border border-white/8 bg-white/[0.03] px-4 py-3">
+              <span className="text-sm text-zinc-300">Includi dati billing</span>
+              <input
+                type="checkbox"
+                checked={exportDraft.includeBilling}
+                onChange={(event) =>
+                  setExportDraft((current) => ({
+                    ...current,
+                    includeBilling: event.target.checked,
+                  }))
+                }
+              />
+            </label>
+          </div>
+        </Drawer>
+      );
+    }
+
+    return null;
+  }
+
+  const onboardingSteps = [
+    {
+      title: "Crea il primo slot",
+      description: "Scegli la challenge da collegare. Non servono ancora credenziali.",
+      done: slots.length > 0,
+      onAction: openAddSlot,
+    },
+    {
+      title: "Collega la challenge",
+      description: "Inserisci login, password e server della prop challenge.",
+      done: selectedSlot ? hasPropConnection(selectedSlot) : false,
+      onAction: selectedSlot ? () => openSlotConnections(selectedSlot.id) : openAddSlot,
+    },
+    {
+      title: "Collega il broker",
+      description: "Inserisci login, password e server del broker da usare in hedge.",
+      done: selectedSlot ? hasBrokerConnection(selectedSlot) : false,
+      onAction: selectedSlot ? () => openSlotConnections(selectedSlot.id) : openAddSlot,
+    },
+    {
+      title: "Usa il preset consigliato",
+      description: "Applica il profilo guidato. Le opzioni avanzate restano opzionali.",
+      done: selectedSlot ? hasStrategyParameters(selectedSlot) : false,
+      onAction: selectedSlot ? () => openSlotParameters(selectedSlot.id) : openAddSlot,
+    },
+    {
+      title: "Attiva la challenge",
+      description: "Controlla il riepilogo finale e porta lo slot online.",
+      done: selectedSlot ? selectedSlot.challengeState === "ATTIVA" : false,
+      onAction: selectedSlot ? () => openActivateSlot(selectedSlot.id) : openAddSlot,
+    },
+  ];
+
+  const strategyGuideSections = [
+    {
+      question: "Perché tradiamo sia la challenge prop sia il broker?",
+      answer:
+        "I due lati non servono alla stessa cosa. La challenge prop serve a superare Fase 1, Fase 2 e arrivare al funded. Il broker serve a bilanciare il rischio economico del ciclo mentre la challenge si muove verso pass o fail.",
+    },
+    {
+      question: "Cosa succede in pratica quando il bot apre un trade?",
+      answer:
+        "Quando arriva un setup, il sistema apre due trade insieme: uno sulla prop e uno sul broker. La prop comanda la lot size. Il broker segue con il moltiplicatore della fase. Se una gamba entra e l'altra no, il sistema chiude subito quella rimasta scoperta.",
+    },
+    {
+      question: "Se la challenge passa, il broker perde per forza?",
+      answer:
+        "Quando la challenge passa, il broker subisce una perdita prevista dal ciclo. Non è un errore: è il costo controllato con cui la strategia avanza di fase. Il sistema aggiorna poi target e moltiplicatore per la fase successiva.",
+    },
+    {
+      question: "Se la challenge fallisce, cosa recupera il broker?",
+      answer:
+        "Se la challenge va in fail, il broker deve recuperare il target pianificato del ciclo. In quel punto il ciclo si chiude, il netto viene archiviato e la dashboard lo registra tra i cicli terminati.",
+    },
+    {
+      question: "Cosa controlla davvero il software mentre è attivo?",
+      answer:
+        "DeltaHedge controlla sincronizzazione ordini, stato connessioni, preset rischio, posizione del ciclo, trade eseguiti lato prop e lato broker. Più avanti mostrerà anche unrealized PnL live con stream diretto.",
+    },
+    {
+      question: "Perché c'è il controllo del 30% sul broker iniziale?",
+      answer:
+        "Prima dell'attivazione, il preset verifica che la perdita stimata al passaggio di Fase 1 e Fase 2 non superi il 30% del broker iniziale. Serve a evitare che il broker si scarichi troppo presto mentre la challenge continua.",
+    },
+  ];
+
+  const platformGuideSections = [
+    {
+      title: "1. Crea lo slot",
+      body: "Premi il bottone + in alto a destra e scegli la challenge. Non serve inserire subito tutto.",
+    },
+    {
+      title: "2. Collega i conti",
+      body: "Apri lo slot e inserisci login, password e server sia per la challenge sia per il broker.",
+    },
+    {
+      title: "3. Usa il preset",
+      body: "Apri Parametri trading e salva il preset consigliato. Le opzioni avanzate possono aspettare.",
+    },
+    {
+      title: "4. Attiva e monitora",
+      body: "Quando challenge, broker e preset sono completi, attiva. Da quel momento vedrai i trade eseguiti e, appena colleghiamo MetaApi, anche l'unrealized PnL live.",
+    },
+  ];
+
+  let nextActionLabel = "Crea il primo slot";
+  let nextActionDescription =
+    "Parti da qui. Dopo ti guideremo passo per passo, senza chiederti tutto insieme.";
+  let nextActionHandler = openAddSlot;
+
+  if (selectedSlot) {
+    if (!hasPropConnection(selectedSlot) || !hasBrokerConnection(selectedSlot)) {
+      nextActionLabel = "Collega i conti";
+      nextActionDescription =
+        "Inserisci prima challenge e broker. E l'unico passaggio tecnico da completare adesso.";
+      nextActionHandler = () => openSlotConnections(selectedSlot.id);
+    } else if (!hasStrategyParameters(selectedSlot)) {
+      nextActionLabel = "Scegli il preset consigliato";
+      nextActionDescription =
+        "Ti proponiamo un preset guidato. Le impostazioni avanzate possono aspettare.";
+      nextActionHandler = () => openSlotParameters(selectedSlot.id);
+    } else if (selectedSlot.challengeState !== "ATTIVA") {
+      nextActionLabel = "Attiva la challenge";
+      nextActionDescription =
+        "Fai il controllo finale e porta online lo slot con un solo comando.";
+      nextActionHandler = () => openActivateSlot(selectedSlot.id);
+    } else {
+      nextActionLabel = "Apri il ciclo";
+      nextActionDescription =
+        "Lo slot e gia attivo. Da qui in poi vedrai solo lo stato operativo reale.";
+      nextActionHandler = () => openSlotDetail(selectedSlot.id);
+    }
+  }
+
+  const isOverview = activeSection === "Panoramica";
+  const isPerformance = activeSection === "Performance";
+  const isStrategyGuide = activeSection === "Guida strategia";
+  const isPlatformGuide = activeSection === "Guida piattaforma";
+
+  return (
+    <div className="dark relative min-h-screen overflow-hidden bg-background text-foreground">
+      <div
+        className="pointer-events-none absolute inset-0"
+        style={{
+          backgroundImage: `
+            radial-gradient(circle at top right, rgba(191,255,43,0.16), transparent 28%),
+            radial-gradient(circle at 18% 18%, rgba(118,153,14,0.14), transparent 24%),
+            radial-gradient(circle, rgba(255,255,255,0.07) 1px, transparent 1px)
+          `,
+          backgroundSize: "auto, auto, 18px 18px",
+          backgroundPosition: "center, center, 0 0",
+        }}
+      />
+      <div className="relative mx-auto max-w-[1600px] p-4 sm:p-6">
+        <div className="grid gap-5 xl:grid-cols-[248px_minmax(0,1fr)]">
+          <aside className="rounded-xl border border-border/80 bg-card/90 p-4 shadow-[0_24px_80px_rgba(0,0,0,0.3)] backdrop-blur-xl">
+            <div className="flex items-center gap-3 border-b border-border/80 pb-5">
+              <div>
+                <DeltaHedgeWordmark />
+                <div className="text-xs text-muted-foreground">Motore cicli prop</div>
+              </div>
+            </div>
+
+            <div className="space-y-7 py-6">
+              {sidebarSections.map((section) => (
+                <div key={section.title}>
+                  <div className="px-2 text-xs font-medium text-muted-foreground">
+                    {section.title}
+                  </div>
+                  <div className="mt-3 space-y-1.5">
+                    {section.items.map((label) => {
+                      const Icon = sidebarIcons[label];
+                      const active = label === activeSection;
+
+                      return (
+                        <button
+                          key={label}
+                          type="button"
+                          onClick={() => setActiveSection(label)}
+                          className={`flex w-full items-center justify-between rounded-lg px-3 py-2.5 text-left text-sm transition ${
+                            active
+                              ? "bg-primary/12 font-medium text-foreground"
+                              : "text-muted-foreground hover:bg-muted/45 hover:text-foreground"
+                          }`}
+                        >
+                          <span className="flex items-center gap-3">
+                            <Icon className="size-4" />
+                            {label}
+                          </span>
+                          {active ? (
+                            <div className="size-2 rounded-full bg-primary" />
+                          ) : null}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="rounded-lg border border-border/80 bg-muted/20 p-4">
+              <div className="text-xs font-medium text-muted-foreground">Guida iniziale</div>
+              <div className="mt-3 text-sm text-muted-foreground">
+                Niente dati complessi finche non completi il primo slot. Parti da un solo passo per volta.
+              </div>
+              <Button
+                className={`mt-4 h-10 w-full ${primaryButtonClass}`}
+                onClick={nextActionHandler}
+              >
+                {nextActionLabel}
+              </Button>
+            </div>
+          </aside>
+
+          <main className="min-w-0 space-y-5">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="min-w-0">
+                <div className="text-sm text-muted-foreground">Dashboard cliente</div>
+                <div className="mt-1 text-2xl font-semibold text-foreground">
+                  {isPerformance
+                    ? "Performance dei cicli"
+                    : isStrategyGuide
+                    ? "Guida alla strategia"
+                    : isPlatformGuide
+                      ? "Guida all'utilizzo della piattaforma"
+                      : slots.length === 0
+                        ? "Configura il primo slot"
+                        : "I tuoi slot e la guida operativa"}
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3">
+                {isOverview && slots.length > 0 ? (
+                  <div className="flex h-11 min-w-[280px] items-center gap-3 rounded-lg border border-border/80 bg-card px-4 text-sm text-muted-foreground shadow-[0_10px_30px_rgba(0,0,0,0.16)]">
+                    <Search className="size-4" />
+                    <input
+                      className="w-full bg-transparent outline-none placeholder:text-muted-foreground"
+                      value={search}
+                      placeholder="Cerca slot, challenge o broker..."
+                      onChange={(event) => setSearch(event.target.value)}
+                    />
+                  </div>
+                ) : null}
+
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="size-11 rounded-lg border border-border/80 bg-card text-muted-foreground shadow-[0_10px_30px_rgba(0,0,0,0.16)] hover:bg-muted/60 hover:text-foreground"
+                  onClick={openNotificationsPanel}
+                >
+                  <BellDot className="size-4" />
+                </Button>
+
+                <Button
+                  size="icon"
+                  className={`size-11 ${primaryButtonClass}`}
+                  onClick={openAddSlot}
+                >
+                  <Plus className="size-4" />
+                </Button>
+              </div>
+            </div>
+            {isPerformance ? (
+              <>
+                <div className="grid gap-3 md:grid-cols-3">
+                  {performanceCards.map((card) => (
+                    <CompactSummaryCard
+                      key={card.label}
+                      label={card.label}
+                      value={card.value}
+                      note={card.note}
+                    />
+                  ))}
+                </div>
+
+                <Card className={`overflow-hidden ${panelClass}`}>
+                  <CardHeader className="border-b border-border/80 pb-5">
+                    <Badge className="w-fit border-primary/20 bg-primary/10 text-primary hover:bg-primary/10">
+                      Performance
+                    </Badge>
+                    <CardTitle className="mt-4 text-3xl tracking-tight text-white">
+                      Performance netta dei cicli chiusi
+                    </CardTitle>
+                    <CardDescription className="max-w-3xl text-zinc-500">
+                      Il grafico segue solo il netto finale dei cicli archiviati: profitto broker realizzato meno costo prop.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="p-6">
+                    {closedCycleLogs.length === 0 ? (
+                      <div className="rounded-[16px] border border-white/8 bg-[#070b14] p-6">
+                        <div className="flex items-center justify-between text-xs uppercase tracking-[0.14em] text-zinc-500">
+                          <span>Equity curve</span>
+                          <span>In attesa del primo ciclo chiuso</span>
+                        </div>
+                        <div className="mt-6 h-[280px] overflow-hidden rounded-[14px] border border-dashed border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.02),rgba(255,255,255,0.01))]">
+                          <div className="flex h-full items-center justify-center px-6 text-center text-sm leading-7 text-zinc-500">
+                            Appena il primo ciclo viene archiviato qui comparirà la curva equity cumulata.
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <EquityCurveChart points={equityCurvePoints} />
+                    )}
+                  </CardContent>
+                </Card>
+
+                <div className="grid gap-5 xl:grid-cols-[1.05fr_0.95fr]">
+                  <Card className={panelClass}>
+                    <CardHeader>
+                      <CardTitle className="text-xl text-white">
+                        Ripartizione del risultato
+                      </CardTitle>
+                      <CardDescription className="text-zinc-500">
+                        Vista aggregata dei cicli chiusi fino ad ora.
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="grid gap-3 sm:grid-cols-3">
+                      <div className="rounded-[12px] border border-white/8 bg-white/[0.03] px-4 py-4">
+                        <div className="text-xs uppercase tracking-[0.14em] text-zinc-500">
+                          Broker realizzato
+                        </div>
+                        <div className="mt-2 text-lg font-semibold text-white">
+                          {formatSignedCurrency(totalBrokerRealized)}
+                        </div>
+                      </div>
+                      <div className="rounded-[12px] border border-white/8 bg-white/[0.03] px-4 py-4">
+                        <div className="text-xs uppercase tracking-[0.14em] text-zinc-500">
+                          Costi prop
+                        </div>
+                        <div className="mt-2 text-lg font-semibold text-white">
+                          {formatSignedCurrency(-totalPropCost)}
+                        </div>
+                      </div>
+                      <div className="rounded-[12px] border border-primary/10 bg-primary/5 px-4 py-4">
+                        <div className="text-xs uppercase tracking-[0.14em] text-zinc-500">
+                          Netto totale
+                        </div>
+                        <div className="mt-2 text-lg font-semibold text-white">
+                          {formatSignedCurrency(totalNetProfit)}
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <Card className={panelClass}>
+                    <CardHeader>
+                      <CardTitle className="text-xl text-white">
+                        Ultimo ciclo archiviato
+                      </CardTitle>
+                      <CardDescription className="text-zinc-500">
+                        L'ultimo ciclo chiuso spiega il punto più recente della curva.
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-3 text-sm text-zinc-400">
+                      <div className="rounded-[12px] border border-white/8 bg-white/[0.03] px-4 py-3">
+                        Slot:{" "}
+                        <span className="font-medium text-white">
+                          {lastClosedCycle?.slot || "Nessuno"}
+                        </span>
+                      </div>
+                      <div className="rounded-[12px] border border-white/8 bg-white/[0.03] px-4 py-3">
+                        Esito:{" "}
+                        <span className="font-medium text-white">
+                          {lastClosedCycle
+                            ? getCycleOutcomeLabel(lastClosedCycle.outcome)
+                            : "In attesa"}
+                        </span>
+                      </div>
+                      <div className="rounded-[12px] border border-white/8 bg-white/[0.03] px-4 py-3">
+                        Netto ciclo:{" "}
+                        <span className="font-medium text-white">
+                          {formatSignedCurrency(lastClosedCycle?.netProfit || 0)}
+                        </span>
+                      </div>
+                      <div className="rounded-[12px] border border-white/8 bg-white/[0.03] px-4 py-3">
+                        Chiuso il:{" "}
+                        <span className="font-medium text-white">
+                          {lastClosedCycle
+                            ? formatDateTime(lastClosedCycle.closedAt)
+                            : "In attesa"}
+                        </span>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                {closedCycleLogs.length > 0 ? (
+                  <Card className={`overflow-hidden ${panelClass}`}>
+                    <CardHeader className="border-b border-white/8 pb-5">
+                      <CardTitle className="text-2xl tracking-tight text-white">
+                        Log dei cicli
+                      </CardTitle>
+                      <CardDescription className="text-zinc-500">
+                        Ogni riga rappresenta un ciclo chiuso e il suo netto finale.
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="p-6">
+                      <div className="overflow-hidden rounded-[14px] border border-white/8">
+                        <Table>
+                          <TableHeader>
+                            <TableRow className="border-white/8 hover:bg-transparent">
+                              <TableHead className="text-xs uppercase tracking-[0.14em] text-zinc-500">Ciclo</TableHead>
+                              <TableHead className="text-xs uppercase tracking-[0.14em] text-zinc-500">Slot</TableHead>
+                              <TableHead className="text-xs uppercase tracking-[0.14em] text-zinc-500">Esito</TableHead>
+                              <TableHead className="text-xs uppercase tracking-[0.14em] text-zinc-500">Broker realizzato</TableHead>
+                              <TableHead className="text-xs uppercase tracking-[0.14em] text-zinc-500">Costo prop</TableHead>
+                              <TableHead className="text-xs uppercase tracking-[0.14em] text-zinc-500">Netto</TableHead>
+                              <TableHead className="text-xs uppercase tracking-[0.14em] text-zinc-500">Chiuso il</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {closedCycleLogs.map((cycle, index) => (
+                              <TableRow key={cycle.id} className="border-white/8 hover:bg-white/[0.02]">
+                                <TableCell className="text-white">Ciclo {index + 1}</TableCell>
+                                <TableCell className="text-zinc-300">{cycle.slot}</TableCell>
+                                <TableCell>
+                                  <Badge className={getCycleOutcomeBadgeClass(cycle.outcome)}>
+                                    {getCycleOutcomeLabel(cycle.outcome)}
+                                  </Badge>
+                                </TableCell>
+                                <TableCell className="text-zinc-300">
+                                  {formatSignedCurrency(cycle.brokerRealizedProfit)}
+                                </TableCell>
+                                <TableCell className="text-zinc-300">
+                                  {formatCurrency(cycle.propCost)}
+                                </TableCell>
+                                <TableCell
+                                  className={
+                                    Number(cycle.netProfit || 0) >= 0
+                                      ? "text-primary"
+                                      : "text-rose-300"
+                                  }
+                                >
+                                  {formatSignedCurrency(cycle.netProfit)}
+                                </TableCell>
+                                <TableCell className="text-zinc-500">
+                                  {formatDateTime(cycle.closedAt)}
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ) : null}
+
+                <Card className={panelClass}>
+                  <CardHeader>
+                    <CardTitle className="text-lg text-white">
+                      Come funziona questa sezione
+                    </CardTitle>
+                    <CardDescription className="text-zinc-500">
+                      Nota rapida, non più protagonista della pagina.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="grid gap-3 text-sm text-zinc-400 md:grid-cols-3">
+                    <div className="rounded-[12px] border border-white/8 bg-white/[0.03] px-4 py-3">
+                      Un ciclo entra qui solo quando termina per fail in Fase 1, fail in Fase 2 o fail nel Funded.
+                    </div>
+                    <div className="rounded-[12px] border border-white/8 bg-white/[0.03] px-4 py-3">
+                      Il netto ciclo è calcolato come profitto broker realizzato meno costo prop della challenge.
+                    </div>
+                    <div className="rounded-[12px] border border-white/8 bg-white/[0.03] px-4 py-3">
+                      La curva non segue il mark-to-market: segue solo il netto finale dei cicli archiviati.
+                    </div>
+                  </CardContent>
+                </Card>
+              </>
+            ) : isStrategyGuide ? (
+              <div className="grid gap-5 xl:grid-cols-[1.15fr_0.85fr]">
+                <Card className={panelClass}>
+                  <CardHeader className="border-b border-white/8 pb-5">
+                    <Badge className="w-fit border-primary/20 bg-primary/10 text-primary hover:bg-primary/10">
+                      FAQ strategia
+                    </Badge>
+                    <CardTitle className="mt-4 text-3xl tracking-tight text-white">
+                      Le domande che il cliente si fa prima di attivare
+                    </CardTitle>
+                    <CardDescription className="max-w-3xl text-zinc-500">
+                      Risposte brevi, pratiche e ordinate come una conversazione reale: cosa fa il sistema, perché esistono due lati e cosa succede quando il ciclo passa o fallisce.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-3 p-6">
+                    {strategyGuideSections.map((section, index) => {
+                      const isOpen = index === openStrategyQuestion;
+
+                      return (
+                        <div
+                          key={section.question}
+                          className={`overflow-hidden rounded-[18px] border transition ${
+                            isOpen
+                              ? "border-primary/20 bg-[linear-gradient(180deg,rgba(210,255,0,0.08),rgba(255,255,255,0.02))]"
+                              : "border-white/8 bg-white/[0.03]"
+                          }`}
+                        >
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setOpenStrategyQuestion((current) =>
+                                current === index ? -1 : index,
+                              )
+                            }
+                            className="flex w-full items-center justify-between gap-4 px-5 py-4 text-left"
+                          >
+                            <div className="min-w-0">
+                              <div className="text-[11px] uppercase tracking-[0.14em] text-zinc-500">
+                                Domanda {index + 1}
+                              </div>
+                              <div className="mt-2 text-lg font-semibold text-white">
+                                {section.question}
+                              </div>
+                            </div>
+                            <div
+                              className={`flex size-9 shrink-0 items-center justify-center rounded-full border transition ${
+                                isOpen
+                                  ? "border-primary/20 bg-primary text-primary-foreground"
+                                  : "border-white/8 bg-white/[0.03] text-zinc-400"
+                              }`}
+                            >
+                              <ChevronDown
+                                className={`size-4 transition ${isOpen ? "rotate-180" : ""}`}
+                              />
+                            </div>
+                          </button>
+
+                          <AnimatePresence initial={false}>
+                            {isOpen ? (
+                              <motion.div
+                                initial={{ height: 0, opacity: 0 }}
+                                animate={{ height: "auto", opacity: 1 }}
+                                exit={{ height: 0, opacity: 0 }}
+                                transition={{ duration: 0.2, ease: "easeOut" }}
+                                className="overflow-hidden"
+                              >
+                                <div className="border-t border-white/8 px-5 py-4 text-sm leading-7 text-zinc-300">
+                                  {section.answer}
+                                </div>
+                              </motion.div>
+                            ) : null}
+                          </AnimatePresence>
+                        </div>
+                      );
+                    })}
+                  </CardContent>
+                </Card>
+
+                <Card className={panelClass}>
+                  <CardHeader className="border-b border-white/8 pb-5">
+                    <CardTitle className="text-xl text-white">
+                      In pratica
+                    </CardTitle>
+                    <CardDescription className="text-zinc-500">
+                      Tre cose da ricordare prima di partire davvero.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4 p-6 text-sm text-zinc-400">
+                    <div className="rounded-[18px] border border-primary/20 bg-[linear-gradient(180deg,rgba(210,255,0,0.08),rgba(255,255,255,0.02))] p-5">
+                      <div className="text-[11px] uppercase tracking-[0.14em] text-primary">
+                        Sintesi
+                      </div>
+                      <div className="mt-3 text-2xl font-semibold text-white">
+                        Uno slot = una challenge + un broker
+                      </div>
+                      <div className="mt-2 leading-7 text-zinc-300">
+                        Tutta la logica del prodotto gira attorno a questa coppia. Se uno dei due lati manca, il ciclo non parte.
+                      </div>
+                    </div>
+
+                    {[
+                      "Senza collegare entrambi i conti, non puoi attivare nulla.",
+                      "Il preset consigliato basta per partire, l'avanzato può aspettare.",
+                      "Se vuoi lavorare davvero, la pagina utile resta Panoramica.",
+                    ].map((item) => (
+                      <div
+                        key={item}
+                        className="flex items-start gap-3 rounded-[14px] border border-white/8 bg-white/[0.03] px-4 py-4"
+                      >
+                        <div className="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground">
+                          <Check className="size-4" />
+                        </div>
+                        <div className="leading-6 text-zinc-300">{item}</div>
+                      </div>
+                    ))}
+
+                    <Button
+                      className={`w-full ${primaryButtonClass}`}
+                      onClick={() => setActiveSection("Panoramica")}
+                    >
+                      Torna alla panoramica
+                    </Button>
+                  </CardContent>
+                </Card>
+              </div>
+            ) : isPlatformGuide ? (
+              <div className="grid gap-5 xl:grid-cols-[1.15fr_0.85fr]">
+                <Card className={panelClass}>
+                  <CardHeader className="border-b border-white/8 pb-5">
+                    <Badge className="w-fit border-primary/20 bg-primary/10 text-primary hover:bg-primary/10">
+                      Onboarding visuale
+                    </Badge>
+                    <CardTitle className="mt-4 text-3xl tracking-tight text-white">
+                      Come usare la piattaforma, senza pensare troppo
+                    </CardTitle>
+                    <CardDescription className="max-w-3xl text-zinc-500">
+                      La logica è semplice: crei lo slot, colleghi i due lati, salvi il preset e attivi. Qui sotto lo vedi in un flusso più premium e più leggibile.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="p-6">
+                    <div className="space-y-4">
+                      {platformGuideSections.map((section, index) => (
+                        <div
+                          key={section.title}
+                          className="group relative overflow-hidden rounded-[18px] border border-white/8 bg-[linear-gradient(180deg,rgba(255,255,255,0.045),rgba(255,255,255,0.02))] p-5"
+                        >
+                          <div className="absolute inset-y-0 left-0 w-px bg-white/8" />
+                          <div className="flex items-start gap-4">
+                            <div className="flex size-11 shrink-0 items-center justify-center rounded-[14px] bg-primary text-primary-foreground shadow-[0_12px_32px_rgba(210,255,0,0.12)]">
+                              <span className="text-sm font-bold">{index + 1}</span>
+                            </div>
+                            <div className="min-w-0">
+                              <div className="flex items-center gap-2 text-[11px] uppercase tracking-[0.14em] text-primary">
+                                Step {index + 1}
+                                <ArrowRight className="size-3" />
+                              </div>
+                              <div className="mt-2 text-xl font-semibold text-white">
+                                {section.title.replace(/^\d+\.\s*/, "")}
+                              </div>
+                              <div className="mt-2 text-sm leading-7 text-zinc-300">
+                                {section.body}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card className={panelClass}>
+                  <CardHeader className="border-b border-white/8 pb-5">
+                    <CardTitle className="text-xl text-white">
+                      Checklist rapida
+                    </CardTitle>
+                    <CardDescription className="text-zinc-500">
+                      Le uniche cose che contano davvero per andare live.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4 p-6 text-sm text-zinc-400">
+                    <div className="rounded-[18px] border border-white/8 bg-white/[0.03] p-5">
+                      <div className="text-[11px] uppercase tracking-[0.14em] text-zinc-500">
+                        Stato onboarding
+                      </div>
+                      <div className="mt-3 text-3xl font-semibold text-white">
+                        {onboardingSteps.filter((step) => step.done).length}/{onboardingSteps.length}
+                      </div>
+                      <div className="mt-2 text-sm leading-6 text-zinc-400">
+                        Appena completi tutti i passaggi, lo slot può essere acceso senza altri giri.
+                      </div>
+                    </div>
+
+                    {onboardingSteps.map((step, index) => (
+                      <div
+                        key={step.title}
+                        className="flex items-center justify-between rounded-[14px] border border-white/8 bg-white/[0.03] px-4 py-4"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="flex size-8 items-center justify-center rounded-full bg-white/6 text-xs font-semibold text-zinc-300">
+                            {index + 1}
+                          </div>
+                          <span className="text-zinc-300">{step.title}</span>
+                        </div>
+                        <span
+                          className={`text-[11px] font-medium uppercase tracking-[0.12em] ${
+                            step.done ? "text-primary" : "text-zinc-500"
+                          }`}
+                        >
+                          {step.done ? "Fatto" : "Da fare"}
+                        </span>
+                      </div>
+                    ))}
+
+                    <Button
+                      className={`w-full ${primaryButtonClass}`}
+                      onClick={() => setActiveSection("Panoramica")}
+                    >
+                      Torna alla panoramica
+                    </Button>
+                  </CardContent>
+                </Card>
+              </div>
+            ) : slots.length === 0 ? (
+              <>
+                <div className="grid gap-3 md:grid-cols-3">
+                  {summaryCards.map((card) => (
+                    <CompactSummaryCard
+                      key={card.key}
+                      label={card.label}
+                      value={card.value}
+                      note={card.note}
+                      change={card.change}
+                    />
+                  ))}
+                </div>
+
+                <GuideStrip
+                  steps={onboardingSteps}
+                />
+
+                <Card className={`overflow-hidden ${panelClass}`}>
+                  <CardHeader className="border-b border-white/8 pb-5">
+                    <CardTitle className="text-2xl tracking-tight text-white">
+                      Prima coppia, zero attrito
+                    </CardTitle>
+                    <CardDescription className="text-zinc-500">
+                      Ti servono solo gli accessi della challenge e del broker. Il resto lo imposta DeltaHedge nel flusso guidato.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="grid gap-8 p-6 lg:grid-cols-[1fr_1fr]">
+                    <div>
+                      <div className="text-sm font-medium text-white">Cosa preparare</div>
+                      <div className="mt-4 space-y-3 text-sm text-zinc-400">
+                        <div>Login, password e server della challenge prop.</div>
+                        <div>Login, password e server del broker.</div>
+                        <div>Il preset consigliato basta per partire.</div>
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-sm font-medium text-white">Cosa vedrai dopo</div>
+                      <div className="mt-4 space-y-3 text-sm text-zinc-400">
+                        <div>Stato della coppia e checklist di attivazione.</div>
+                        <div>Trade separati tra lato prop e lato broker.</div>
+                        <div>Unrealized PnL live appena il backend riceve i dati reali.</div>
+                      </div>
+                      <div className="mt-5 flex flex-wrap gap-3">
+                        <Button
+                          variant="outline"
+                          className={secondaryButtonClass}
+                          onClick={() => setActiveSection("Guida strategia")}
+                        >
+                          Guida strategia
+                        </Button>
+                        <Button
+                          variant="outline"
+                          className={secondaryButtonClass}
+                          onClick={() => setActiveSection("Guida piattaforma")}
+                        >
+                          Guida piattaforma
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </>
+            ) : (
+              <>
+                <div className="grid gap-3 md:grid-cols-3">
+                  {summaryCards.map((card) => (
+                    <CompactSummaryCard
+                      key={card.key}
+                      label={card.label}
+                      value={card.value}
+                      note={card.note}
+                      change={card.change}
+                    />
+                  ))}
+                </div>
+
+                <GuideStrip
+                  steps={onboardingSteps}
+                />
+
+                <Card className={`overflow-hidden ${panelClass}`}>
+                  <CardHeader className="border-b border-border/80 pb-5">
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      <div>
+                        <CardTitle className="text-2xl tracking-tight text-foreground">
+                          Le tue coppie
+                        </CardTitle>
+                        <CardDescription className="text-muted-foreground">
+                          Uno slot = una challenge prop collegata a un broker. Qui sotto trovi solo stato, progressione e azioni utili.
+                        </CardDescription>
+                      </div>
+                      <Badge className="border-border/80 bg-muted/35 text-muted-foreground hover:bg-muted/35">
+                        {filteredSlots.length} visualizzati
+                      </Badge>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="p-6">
+                    <div className="grid justify-items-start gap-4 md:grid-cols-2">
+                      {filteredSlots.map((slot, index) => {
+                        const propConnected = hasPropConnection(slot);
+                        const brokerConnected = hasBrokerConnection(slot);
+                        const slotReady =
+                          propConnected &&
+                          brokerConnected &&
+                          hasStrategyParameters(slot);
+                        const projection = getBrokerProjections(slot);
+
+                        return (
+                          <motion.div
+                            key={slot.id}
+                            role="button"
+                            tabIndex={0}
+                            initial={{ opacity: 0, y: 16 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: index * 0.04, duration: 0.22 }}
+                            whileHover={{ y: -3 }}
+                            onClick={() => setSelectedSlotId(slot.id)}
+                            onKeyDown={(event) => {
+                              if (event.key === "Enter" || event.key === " ") {
+                                event.preventDefault();
+                                setSelectedSlotId(slot.id);
+                              }
+                            }}
+                            className={`relative w-full max-w-[440px] cursor-pointer overflow-hidden rounded-xl border text-left transition ${
+                              slot.id === selectedSlotId
+                                ? "border-white/12 bg-[linear-gradient(180deg,rgba(255,255,255,0.055),rgba(255,255,255,0.02))] shadow-[0_24px_54px_rgba(0,0,0,0.32),inset_0_1px_0_rgba(255,255,255,0.03)]"
+                                : "border-border/80 bg-[linear-gradient(180deg,rgba(255,255,255,0.025),rgba(255,255,255,0.012))] shadow-[0_16px_34px_rgba(0,0,0,0.22),inset_0_1px_0_rgba(255,255,255,0.02)] hover:bg-white/[0.03]"
+                            }`}
+                          >
+                            <div className="absolute right-3 top-3 z-10 flex items-center gap-2">
+                                <SlotPowerSwitch
+                                  checked={slot.challengeState === "ATTIVA"}
+                                  title={
+                                    slot.challengeState === "ATTIVA"
+                                      ? "Spegni slot"
+                                      : slotReady
+                                        ? "Accendi slot"
+                                        : "Completa setup prima di accendere"
+                                  }
+                                  onToggle={() => toggleSlotPower(slot.id)}
+                                />
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="icon-sm"
+                                  className={secondaryButtonClass}
+                                  onClick={(event) => {
+                                    event.stopPropagation();
+                                    openSlotParameters(slot.id);
+                                  }}
+                                >
+                                  <Settings className="size-4" />
+                                </Button>
+                                <ChallengeStateBadge value={slot.challengeState} />
+                            </div>
+
+                            <div>
+                              <FundingPipsWordmark
+                                large
+                                className="justify-start rounded-none pr-[132px]"
+                              />
+                            </div>
+
+                            <div className="px-4 pb-4 pt-3">
+                            <div className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
+                              {slot.slot}
+                            </div>
+                            <div className="mt-1 text-lg font-semibold text-foreground">
+                              {slot.challenge.replace("FundingPips ", "")}
+                            </div>
+                            <div className="mt-1 text-sm text-muted-foreground">
+                              Broker: {slot.brokerAccount || "da collegare"}
+                            </div>
+
+                            <div className="mt-4 flex flex-wrap items-center gap-4 text-xs font-medium">
+                              {[
+                                { label: "Challenge", done: propConnected },
+                                { label: "Broker", done: brokerConnected },
+                              ].map((item) => (
+                                <div
+                                  key={item.label}
+                                  className="inline-flex items-center gap-2 text-muted-foreground"
+                                >
+                                  <span
+                                    className={`size-2 rounded-full ${
+                                      item.done ? "bg-primary" : "bg-rose-400"
+                                    }`}
+                                  />
+                                  <span>{item.label}</span>
+                                </div>
+                              ))}
+                            </div>
+
+                            <div className="mt-4 flex items-center justify-between gap-3 text-sm">
+                              <div className="text-muted-foreground">
+                                <span className="text-foreground">{slot.phase}</span>
+                                {" · "}
+                                target {formatCurrency(getEffectiveCycleTarget(slot))}
+                              </div>
+                              <div className="text-muted-foreground">{slot.challengeState}</div>
+                            </div>
+
+                            <div className="mt-3">
+                              <CycleBalanceBar
+                                value={slot.cycleBalance}
+                                leftValue={projection.failGain}
+                                rightValue={projection.passLoss}
+                                compact
+                              />
+                            </div>
+
+                            <div className="mt-4 flex flex-wrap gap-2">
+                              <Button
+                                type="button"
+                                variant="outline"
+                                className={`h-9 px-3 ${secondaryButtonClass}`}
+                                onClick={(event) => {
+                                  event.stopPropagation();
+                                  openSlotConnections(slot.id);
+                                }}
+                              >
+                                Conti
+                              </Button>
+                              <Button
+                                type="button"
+                                className={`h-9 px-3 ${secondaryButtonClass}`}
+                                onClick={(event) => {
+                                  event.stopPropagation();
+                                  if (slot.challengeState === "ATTIVA") {
+                                    openSlotDetail(slot.id);
+                                    return;
+                                  }
+
+                                  if (slotReady) {
+                                    openActivateSlot(slot.id);
+                                    return;
+                                  }
+
+                                  if (!propConnected || !brokerConnected) {
+                                    openSlotConnections(slot.id);
+                                    return;
+                                  }
+
+                                  openSlotParameters(slot.id);
+                                }}
+                              >
+                                {slot.challengeState === "ATTIVA"
+                                  ? "Apri slot"
+                                  : slotReady
+                                    ? "Apri slot"
+                                    : "Continua"}
+                              </Button>
+                            </div>
+                            </div>
+                          </motion.div>
+                        );
+                      })}
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <div className="flex flex-wrap items-center gap-3 text-sm text-zinc-500">
+                  <span>Uno slot = una challenge + un broker.</span>
+                  <span className="text-white/20">•</span>
+                  <button
+                    type="button"
+                    className="text-zinc-300 transition hover:text-white"
+                    onClick={() => setActiveSection("Guida strategia")}
+                  >
+                    Apri guida strategia
+                  </button>
+                  <span className="text-white/20">•</span>
+                  <button
+                    type="button"
+                    className="text-zinc-300 transition hover:text-white"
+                    onClick={() => setActiveSection("Guida piattaforma")}
+                  >
+                    Apri guida piattaforma
+                  </button>
+                </div>
+              </>
+            )}
+          </main>
+        </div>
+      </div>
+
+      <AnimatePresence>{renderDrawer()}</AnimatePresence>
+    </div>
+  );
+}
+
+export default App;
