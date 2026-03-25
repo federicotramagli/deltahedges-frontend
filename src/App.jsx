@@ -10,6 +10,7 @@ import {
   Home,
   KeyRound,
   Layers3,
+  LogOut,
   Logs,
   Plus,
   Search,
@@ -37,6 +38,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { useAuth } from "./contexts/AuthContext";
+import { supabase } from "./lib/supabase";
 
 const sidebarSections = [
   {
@@ -238,15 +241,37 @@ const primaryButtonClass =
 const secondaryButtonClass =
   "rounded-md border border-input bg-background/75 text-foreground hover:bg-muted/70";
 
-const apiBaseUrl =
-  import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:4000";
+const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
 const localStateStorageKey = "deltahedge.local-dashboard-state.v1";
 
-async function apiRequest(path, options = {}) {
-  const headers = new Headers(options.headers || {});
-  if (options.body && !headers.has("content-type")) {
+if (!apiBaseUrl) {
+  throw new Error("Manca VITE_API_BASE_URL");
+}
+
+async function buildAuthorizedHeaders(headersInit, includeJsonBody = false) {
+  const headers = new Headers(headersInit || {});
+
+  if (includeJsonBody && !headers.has("content-type")) {
     headers.set("content-type", "application/json");
   }
+
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+
+  if (!session?.access_token) {
+    throw new Error("Sessione Supabase non disponibile");
+  }
+
+  headers.set("authorization", `Bearer ${session.access_token}`);
+  return headers;
+}
+
+async function apiRequest(path, options = {}) {
+  const headers = await buildAuthorizedHeaders(
+    options.headers,
+    Boolean(options.body),
+  );
 
   const response = await fetch(`${apiBaseUrl}${path}`, {
     ...options,
@@ -1584,6 +1609,7 @@ function Drawer({
 }
 
 function App() {
+  const { user, session, loading: authLoading, signOut } = useAuth();
   const [activeSection, setActiveSection] = useState("Panoramica");
   const [search, setSearch] = useState("");
   const [slots, setSlots] = useState(initialSlots);
@@ -1596,7 +1622,6 @@ function App() {
   const [testingSlotId, setTestingSlotId] = useState(null);
   const slotsRef = useRef(initialSlots);
   const connectionMonitorRef = useRef(new Map());
-  const hydratingSavedAccountsRef = useRef(false);
   const [selectedSlotId, setSelectedSlotId] = useState(initialSlots[0]?.id ?? null);
   const [panel, setPanel] = useState({ type: null, source: null });
   const [openStrategyQuestion, setOpenStrategyQuestion] = useState(0);
@@ -1625,6 +1650,17 @@ function App() {
       },
       ...current,
     ]);
+  }
+
+  async function handleSignOut() {
+    try {
+      await signOut();
+    } catch (error) {
+      pushNotification(
+        "Errore logout",
+        error instanceof Error ? error.message : "Impossibile chiudere la sessione.",
+      );
+    }
   }
 
   function openSavedAccountPanel(accountType = "PROP") {
@@ -1663,45 +1699,6 @@ function App() {
       "Backend non disponibile: il conto e stato salvato localmente in questo browser.",
     );
     closePanel();
-  }
-
-  async function hydrateLocalSavedAccountsToBackend(accounts) {
-    const candidates = (accounts || []).filter(
-      (account) =>
-        account?.login?.trim() &&
-        account?.password?.trim() &&
-        (account.isLocalOnly || String(account.id || "").startsWith("saved_local_")),
-    );
-
-    if (!candidates.length || hydratingSavedAccountsRef.current) {
-      return;
-    }
-
-    hydratingSavedAccountsRef.current = true;
-
-    try {
-      for (const account of candidates) {
-        await apiRequest("/accounts-library", {
-          method: "POST",
-          body: JSON.stringify({
-            label: account.label,
-            accountType: account.accountType,
-            platform: account.platform || "mt5",
-            accountName: account.accountName || "",
-            login: account.login,
-            password: account.password,
-            server: account.server,
-            lotStep: Number(account.lotStep || 0.01),
-          }),
-        });
-      }
-
-      await loadDashboardData();
-    } catch (error) {
-      console.error("[DeltaHedge] hydrate local saved accounts failed", error);
-    } finally {
-      hydratingSavedAccountsRef.current = false;
-    }
   }
 
   async function saveSavedAccount() {
@@ -1746,8 +1743,13 @@ function App() {
       );
       closePanel();
     } catch (error) {
-      console.error("[DeltaHedge] save saved account failed, using local fallback", error);
-      saveSavedAccountLocally();
+      console.error("[DeltaHedge] save saved account failed", error);
+      pushNotification(
+        "Errore salva conto",
+        error instanceof Error
+          ? error.message
+          : "Salvataggio backend non riuscito.",
+      );
     }
   }
 
@@ -1993,24 +1995,19 @@ function App() {
   }
 
   async function loadDashboardData(preferredSlotId = null) {
-    const localState = readLocalDashboardState();
     const [slotsPayload, performancePayload, accountsPayload] = await Promise.all([
       apiRequest("/slots"),
       apiRequest("/performance").catch(() => ({ cycleLogs: [] })),
       apiRequest("/accounts-library").catch(() => ({ accounts: [] })),
     ]);
 
-    const apiSlots = (slotsPayload.slots || []).map(mapApiSlotToUiSlot);
-    const mergedSlots = mergeApiSlotsWithLocalState(apiSlots, localState?.slots || []);
-    const mergedAccounts = mergeSavedAccountsWithLocalState(
-      accountsPayload.accounts || [],
-      localState?.savedAccounts || [],
+    const nextAccounts = accountsPayload.accounts || [];
+    const nextSlots = attachSavedAccountSelectionsToSlots(
+      (slotsPayload.slots || []).map(mapApiSlotToUiSlot),
+      nextAccounts,
     );
-    const hydratedAccounts = ensureSavedAccountsFromSlots(mergedSlots, mergedAccounts);
-    const nextSlots = attachSavedAccountSelectionsToSlots(mergedSlots, hydratedAccounts);
     setSlots(nextSlots);
-    setSavedAccounts(hydratedAccounts);
-    void hydrateLocalSavedAccountsToBackend(hydratedAccounts);
+    setSavedAccounts(nextAccounts);
 
     if (slotsPayload.subscription) {
       setSubscription({
@@ -2034,40 +2031,18 @@ function App() {
   }
 
   useEffect(() => {
+    if (authLoading || !session || !user) return;
+
     void loadDashboardData().catch((error) => {
       console.error("[DeltaHedge] Unable to load dashboard data", error);
-      const localState = readLocalDashboardState();
-      if (localState) {
-        setSlots(localState.slots || []);
-        setSavedAccounts(localState.savedAccounts || []);
-        setProfiles(localState.profiles || initialProfiles);
-        setSubscription(localState.subscription || initialSubscription);
-        setCycleLogs(localState.cycleLogs || initialCycleLogs);
-        setTradeLedger(localState.tradeLedger || []);
-        setSelectedSlotId(localState.selectedSlotId || null);
-        pushNotification(
-          "Modalita locale attiva",
-          "Backend non disponibile: la dashboard sta usando i dati salvati in questo browser.",
-        );
-      }
+      pushNotification(
+        "Errore caricamento dashboard",
+        error instanceof Error
+          ? error.message
+          : "Impossibile caricare i dati dal backend.",
+      );
     });
-  }, []);
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    window.localStorage.setItem(
-      localStateStorageKey,
-        JSON.stringify({
-          slots,
-          savedAccounts,
-          profiles,
-          subscription,
-          cycleLogs,
-          tradeLedger,
-          selectedSlotId,
-        }),
-    );
-  }, [slots, savedAccounts, profiles, subscription, cycleLogs, tradeLedger, selectedSlotId]);
+  }, [authLoading, session, user?.id]);
 
   const selectedSlot =
     slots.find((slot) => slot.id === selectedSlotId) ?? slots[0] ?? null;
@@ -2388,37 +2363,17 @@ function App() {
   }
 
   async function fetchSlotConnectionStatus(slot) {
-    const response = await fetch(`${apiBaseUrl}/debug/connection-status`, {
+    return apiRequest("/debug/connection-status", {
       method: "POST",
-      headers: {
-        "content-type": "application/json",
-      },
       body: JSON.stringify(buildConnectionStatusPayload(slot)),
     });
-
-    const payload = await response.json();
-    if (!response.ok) {
-      throw new Error(payload.error || "Connection status failed");
-    }
-
-    return payload;
   }
 
   async function fetchSlotLiveMetrics(slot) {
-    const response = await fetch(`${apiBaseUrl}/debug/live-metrics`, {
+    return apiRequest("/debug/live-metrics", {
       method: "POST",
-      headers: {
-        "content-type": "application/json",
-      },
       body: JSON.stringify(buildConnectionStatusPayload(slot)),
     });
-
-    const payload = await response.json();
-    if (!response.ok) {
-      throw new Error(payload.error || "Live metrics failed");
-    }
-
-    return payload;
   }
 
   async function waitForConnectedAccounts(slotId) {
@@ -2532,8 +2487,11 @@ function App() {
       ]);
       closePanel();
     } catch (error) {
-      console.error("[DeltaHedge] create slot failed, using local fallback", error);
-      saveAddedSlotLocally();
+      console.error("[DeltaHedge] create slot failed", error);
+      pushNotification(
+        "Errore creazione slot",
+        error instanceof Error ? error.message : "Creazione backend non riuscita.",
+      );
     }
   }
 
@@ -2639,12 +2597,11 @@ function App() {
       ]);
       closePanel();
     } catch (error) {
-      console.error("[DeltaHedge] save connections failed, using local fallback", error);
+      console.error("[DeltaHedge] save connections failed", error);
       pushNotification(
         "Errore salva connessioni",
         error instanceof Error ? error.message : "Salvataggio backend non riuscito.",
       );
-      saveSlotConnectionsLocally();
     }
   }
 
@@ -2703,24 +2660,11 @@ function App() {
       ]);
       closePanel();
     } catch (error) {
-      console.error("[DeltaHedge] save parameters failed, using local fallback", error);
+      console.error("[DeltaHedge] save parameters failed", error);
       pushNotification(
         "Errore salva parametri",
         error instanceof Error ? error.message : "Salvataggio backend non riuscito.",
       );
-      const profileName =
-        profileDraft.name.trim() ||
-        slotDraft.parametersProfile ||
-        profiles[0]?.name ||
-        "Profilo consigliato";
-      const updatedProfile = {
-        ...profileDraft,
-        name: profileName,
-        riskPerTrade: Number(profileDraft.riskPerTrade),
-        maxDailyTrades: Number(profileDraft.maxDailyTrades),
-        orphanTimeoutMs: Number(profileDraft.orphanTimeoutMs),
-      };
-      saveSlotParametersLocally(updatedProfile, profileName);
     }
   }
 
@@ -2773,12 +2717,11 @@ function App() {
       ]);
       closePanel();
     } catch (error) {
-      console.error("[DeltaHedge] activation failed, using local fallback", error);
+      console.error("[DeltaHedge] activation failed", error);
       pushNotification(
         "Errore attivazione",
         error instanceof Error ? error.message : "Attivazione backend non riuscita.",
       );
-      saveActivationLocally();
     }
   }
 
@@ -2852,8 +2795,11 @@ function App() {
         await loadDashboardData(slot.id);
         pushNotification(`${slot.slot} spento`, "Lo slot e stato fermato sul backend.");
       } catch (error) {
-        console.error("[DeltaHedge] pause failed, using local fallback", error);
-        pauseSlotLocally(slot);
+        console.error("[DeltaHedge] pause failed", error);
+        pushNotification(
+          "Errore pausa slot",
+          error instanceof Error ? error.message : "Pausa backend non riuscita.",
+        );
       }
       return;
     }
@@ -2879,8 +2825,11 @@ function App() {
         `Lo slot ${slot.challenge} e stato portato online dal toggle rapido.`,
       );
     } catch (error) {
-      console.error("[DeltaHedge] quick activation failed, using local fallback", error);
-      activateSlotLocally(slot);
+      console.error("[DeltaHedge] quick activation failed", error);
+      pushNotification(
+        "Errore attivazione rapida",
+        error instanceof Error ? error.message : "Attivazione backend non riuscita.",
+      );
     }
   }
 
@@ -2962,11 +2911,8 @@ function App() {
       const tradeSymbol = (manualTrade?.symbol || "XAUUSD").trim().toUpperCase();
       const tradeDirection = manualTrade?.direction || "BUY";
       const tradePropLot = normaliseTradeTestPropLot(manualTrade?.propLot ?? 1);
-      const response = await fetch(`${apiBaseUrl}/debug/test-execution`, {
+      const payload = await apiRequest("/debug/test-execution", {
         method: "POST",
-        headers: {
-          "content-type": "application/json",
-        },
         body: JSON.stringify({
           slotId: workingSlot.id,
           challenge: latestSlot.challenge,
@@ -3009,11 +2955,6 @@ function App() {
             : {}),
         }),
       });
-
-      const payload = await response.json();
-      if (!response.ok) {
-        throw new Error(payload.error || "Test execution failed");
-      }
 
       const createdAt = nowHourMinute();
       const baseId = `live_${slot.id}_${Date.now()}`;
@@ -4911,6 +4852,18 @@ function App() {
                   onClick={openNotificationsPanel}
                 >
                   <BellDot className="size-4" />
+                </Button>
+
+                <Button
+                  type="button"
+                  variant="ghost"
+                  className="h-11 rounded-lg border border-border/80 bg-card px-4 text-muted-foreground shadow-[0_10px_30px_rgba(0,0,0,0.16)] hover:bg-muted/60 hover:text-foreground"
+                  onClick={handleSignOut}
+                >
+                  <span className="hidden max-w-[160px] truncate text-sm font-medium sm:block">
+                    {user?.email || "Esci"}
+                  </span>
+                  <LogOut className="size-4 sm:ml-2" />
                 </Button>
 
                 <Button
