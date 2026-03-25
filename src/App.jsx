@@ -230,16 +230,16 @@ const exportScopeOptions = [
 ];
 
 const panelClass =
-  "rounded-xl border border-white/8 bg-[linear-gradient(180deg,rgba(20,20,20,0.78),rgba(10,10,10,0.9))] shadow-[0_24px_70px_rgba(0,0,0,0.34),inset_0_1px_0_rgba(255,255,255,0.03)] backdrop-blur-2xl";
+  "rounded-xl border border-white/8 bg-white/[0.03] shadow-[0_24px_70px_rgba(0,0,0,0.34),inset_0_1px_0_rgba(255,255,255,0.03)] backdrop-blur-2xl";
 
 const inputClass =
-  "h-11 w-full rounded-md border border-input bg-background/80 px-3 text-sm text-foreground outline-none transition placeholder:text-muted-foreground focus:border-primary/35 focus:ring-2 focus:ring-primary/10";
+  "h-11 w-full rounded-md border border-white/8 bg-white/[0.03] px-3 text-sm text-foreground outline-none transition placeholder:text-muted-foreground focus:border-primary/40 focus:ring-2 focus:ring-primary/20";
 
 const primaryButtonClass =
-  "rounded-md border border-primary/20 bg-primary text-primary-foreground shadow-[0_12px_34px_rgba(210,255,0,0.14)] hover:brightness-95";
+  "rounded-md border border-primary/15 bg-[#D2FF00] text-[#0b0d05] shadow-[0_10px_24px_rgba(210,255,0,0.12)] hover:bg-[#D2FF00]/90";
 
 const secondaryButtonClass =
-  "rounded-md border border-input bg-background/75 text-foreground hover:bg-muted/70";
+  "rounded-md border border-white/8 bg-white/[0.03] text-foreground hover:bg-white/[0.06]";
 
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
 const localStateStorageKey = "deltahedge.local-dashboard-state.v1";
@@ -1318,11 +1318,13 @@ function FundingPipsWordmark({ className = "", large = false }) {
     <div
       className={`${large ? "flex w-full" : "inline-flex"} items-center text-white shadow-[inset_0_0_0_1px_rgba(255,255,255,0.05)] ${
         large
-          ? "min-h-[78px] gap-4 bg-[linear-gradient(135deg,#11178d,#1b22b4)] px-4 py-4"
-          : "gap-2 rounded-md bg-[#0b0f63] px-3 py-2"
+          ? "min-h-[78px] gap-4 bg-[linear-gradient(180deg,rgba(255,255,255,0.045),rgba(255,255,255,0.02))] px-4 py-4"
+          : "gap-2 rounded-md bg-white/[0.04] px-3 py-2"
       } ${className}`}
     >
-      <FundingPipsLogo className={`${large ? "h-9 w-9" : "h-4 w-4"} shrink-0`} />
+      <FundingPipsLogo
+        className={`${large ? "h-9 w-9" : "h-4 w-4"} shrink-0 text-[#D2FF00]`}
+      />
       <span
         className={`font-semibold tracking-[-0.035em] ${large ? "text-[28px] leading-none" : "text-sm"}`}
       >
@@ -1546,6 +1548,8 @@ function Drawer({
   children,
   onSave,
   saveLabel,
+  saveDisabled = false,
+  savePendingLabel = null,
   maxWidthClass = "max-w-[760px]",
 }) {
   return (
@@ -1598,8 +1602,9 @@ function Drawer({
               type="button"
               className={primaryButtonClass}
               onClick={onSave}
+              disabled={saveDisabled}
             >
-              {saveLabel}
+              {saveDisabled && savePendingLabel ? savePendingLabel : saveLabel}
             </Button>
           ) : null}
         </div>
@@ -1620,6 +1625,7 @@ function App() {
   const [cycleLogs, setCycleLogs] = useState(initialCycleLogs);
   const [tradeLedger, setTradeLedger] = useState([]);
   const [testingSlotId, setTestingSlotId] = useState(null);
+  const [savingConnectionsSlotId, setSavingConnectionsSlotId] = useState(null);
   const slotsRef = useRef(initialSlots);
   const connectionMonitorRef = useRef(new Map());
   const [selectedSlotId, setSelectedSlotId] = useState(initialSlots[0]?.id ?? null);
@@ -2534,8 +2540,10 @@ function App() {
 
   async function saveSlotConnections() {
     if (!slotDraft) return;
+    if (savingConnectionsSlotId === slotDraft.id) return;
 
     try {
+      setSavingConnectionsSlotId(slotDraft.id);
       const workingSlot = await ensureBackendSlot(slotDraft);
       if (workingSlot.id !== slotDraft.id) {
         setSlotDraft(workingSlot);
@@ -2602,6 +2610,8 @@ function App() {
         "Errore salva connessioni",
         error instanceof Error ? error.message : "Salvataggio backend non riuscito.",
       );
+    } finally {
+      setSavingConnectionsSlotId((current) => (current === slotDraft.id ? null : current));
     }
   }
 
@@ -3135,6 +3145,8 @@ function App() {
           onClose={closePanel}
           onSave={saveSlotConnections}
           saveLabel="Salva connessioni"
+          saveDisabled={savingConnectionsSlotId === slotDraft.id}
+          savePendingLabel="Connessione in corso..."
           maxWidthClass="max-w-[840px]"
         >
           <div className="space-y-5">
@@ -3702,7 +3714,7 @@ function App() {
                     <span className="mx-2 text-zinc-700">·</span>
                     target stimato {formatCurrency(phase2RecoveryTarget)}
                   </div>
-                  <div className="mt-4 rounded-lg border border-white/8 bg-[#070b14] px-3 py-3 text-sm">
+                  <div className="mt-4 rounded-lg border border-white/8 bg-white/[0.03] px-3 py-3 text-sm">
                     <div className="flex items-center justify-between">
                       <span className="text-zinc-500">
                         Limite consigliato broker
@@ -3751,7 +3763,7 @@ function App() {
                 Simulazione lineare del broker partendo da {formatCurrency(cycleProjection.brokerInitialEquity)}.
               </div>
               <div className="mt-4 grid gap-3">
-                <div className="rounded-lg border border-white/8 bg-[#070b14] px-4 py-3">
+                <div className="rounded-lg border border-white/8 bg-white/[0.03] px-4 py-3">
                   <div className="flex items-center justify-between gap-4">
                     <div>
                       <div className="text-sm font-medium text-white">
@@ -3771,7 +3783,7 @@ function App() {
                     </div>
                   </div>
                 </div>
-                <div className="rounded-lg border border-white/8 bg-[#070b14] px-4 py-3">
+                <div className="rounded-lg border border-white/8 bg-white/[0.03] px-4 py-3">
                   <div className="flex items-center justify-between gap-4">
                     <div>
                       <div className="text-sm font-medium text-white">
@@ -3794,7 +3806,7 @@ function App() {
                     </div>
                   </div>
                 </div>
-                <div className="rounded-lg border border-white/8 bg-[#070b14] px-4 py-3">
+                <div className="rounded-lg border border-white/8 bg-white/[0.03] px-4 py-3">
                   <div className="flex items-center justify-between gap-4">
                     <div>
                       <div className="text-sm font-medium text-white">
@@ -4159,7 +4171,7 @@ function App() {
         >
           <div className="space-y-5">
             <div className="grid gap-5 xl:grid-cols-[1.15fr_0.85fr]">
-              <div className="rounded-[16px] border border-white/8 bg-[linear-gradient(180deg,rgba(133,176,15,0.18),rgba(7,8,5,0.96))] p-5">
+              <div className="rounded-[16px] border border-white/8 bg-white/[0.04] p-5 shadow-[0_24px_54px_rgba(0,0,0,0.26),inset_0_1px_0_rgba(255,255,255,0.03)]">
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div className="flex items-start gap-3">
                     <div className="flex size-11 shrink-0 items-center justify-center rounded-[12px] bg-primary/12 text-primary">
@@ -4184,13 +4196,13 @@ function App() {
                 </div>
 
                 <div className="mt-5 grid gap-3 sm:grid-cols-3">
-                  <div className="rounded-[12px] border border-white/8 bg-[#070b14] px-4 py-3">
+                  <div className="rounded-[12px] border border-white/8 bg-white/[0.03] px-4 py-3">
                     <div className="text-xs uppercase tracking-[0.14em] text-zinc-500">
                       Fase corrente
                     </div>
                     <div className="mt-2 text-base font-semibold text-white">{slotDraft.phase}</div>
                   </div>
-                  <div className="rounded-[12px] border border-white/8 bg-[#070b14] px-4 py-3">
+                  <div className="rounded-[12px] border border-white/8 bg-white/[0.03] px-4 py-3">
                     <div className="text-xs uppercase tracking-[0.14em] text-zinc-500">
                       Target hedge
                     </div>
@@ -4198,7 +4210,7 @@ function App() {
                       {formatCurrency(getEffectiveCycleTarget(slotDraft))}
                     </div>
                   </div>
-                  <div className="rounded-[12px] border border-white/8 bg-[#070b14] px-4 py-3">
+                  <div className="rounded-[12px] border border-white/8 bg-white/[0.03] px-4 py-3">
                     <div className="text-xs uppercase tracking-[0.14em] text-zinc-500">
                       Moltiplicatore
                     </div>
@@ -4208,7 +4220,7 @@ function App() {
                   </div>
                 </div>
 
-                <div className="mt-5 rounded-[14px] border border-white/8 bg-[#070b14] p-4">
+                <div className="mt-5 rounded-[14px] border border-white/8 bg-white/[0.03] p-4">
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <div>
                       <div className="text-sm font-medium text-white">Posizione ciclo</div>
@@ -4272,7 +4284,7 @@ function App() {
                     </Badge>
                   </div>
                   <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                    <div className="rounded-[12px] border border-white/8 bg-[#070b14] px-4 py-4">
+                    <div className="rounded-[12px] border border-white/8 bg-white/[0.03] px-4 py-4">
                       <div className="text-xs uppercase tracking-[0.14em] text-zinc-500">
                         Equity prop
                       </div>
@@ -4283,7 +4295,7 @@ function App() {
                         Challenge aggiornata direttamente da MetaApi.
                       </div>
                     </div>
-                    <div className="rounded-[12px] border border-white/8 bg-[#070b14] px-4 py-4">
+                    <div className="rounded-[12px] border border-white/8 bg-white/[0.03] px-4 py-4">
                       <div className="text-xs uppercase tracking-[0.14em] text-zinc-500">
                         Equity broker
                       </div>
@@ -4294,7 +4306,7 @@ function App() {
                         Equity del lato broker separata dalla prop.
                       </div>
                     </div>
-                    <div className="rounded-[12px] border border-white/8 bg-[#070b14] px-4 py-4">
+                    <div className="rounded-[12px] border border-white/8 bg-white/[0.03] px-4 py-4">
                       <div className="text-xs uppercase tracking-[0.14em] text-zinc-500">
                         Unrealized PnL prop
                       </div>
@@ -4309,7 +4321,7 @@ function App() {
                         Derivato da equity - balance sul conto challenge.
                       </div>
                     </div>
-                    <div className="rounded-[12px] border border-white/8 bg-[#070b14] px-4 py-4">
+                    <div className="rounded-[12px] border border-white/8 bg-white/[0.03] px-4 py-4">
                       <div className="text-xs uppercase tracking-[0.14em] text-zinc-500">
                         Unrealized PnL broker
                       </div>
@@ -4333,7 +4345,7 @@ function App() {
                     {slotConnectionRows.map((item) => (
                       <div
                         key={item.label}
-                        className="rounded-[12px] border border-white/8 bg-[#070b14] px-4 py-3"
+                        className="rounded-[12px] border border-white/8 bg-white/[0.03] px-4 py-3"
                       >
                         <div className="text-xs uppercase tracking-[0.14em] text-zinc-500">
                           {item.label}
@@ -4740,12 +4752,13 @@ function App() {
         className="pointer-events-none absolute inset-0"
         style={{
           backgroundImage: `
-            radial-gradient(circle at top right, rgba(191,255,43,0.16), transparent 28%),
-            radial-gradient(circle at 18% 18%, rgba(118,153,14,0.14), transparent 24%),
+            radial-gradient(circle at top right, rgba(210,255,0,0.12), transparent 30%),
+            radial-gradient(circle at top right, rgba(255,255,255,0.07), transparent 18%),
+            radial-gradient(circle at bottom left, rgba(210,255,0,0.08), transparent 24%),
             radial-gradient(circle, rgba(255,255,255,0.07) 1px, transparent 1px)
           `,
-          backgroundSize: "auto, auto, 18px 18px",
-          backgroundPosition: "center, center, 0 0",
+          backgroundSize: "auto, auto, auto, 18px 18px",
+          backgroundPosition: "center, center, center, 0 0",
         }}
       />
       <div className="relative mx-auto max-w-[1600px] p-4 sm:p-6">
@@ -4904,7 +4917,7 @@ function App() {
                   </CardHeader>
                   <CardContent className="p-6">
                     {closedCycleLogs.length === 0 ? (
-                      <div className="rounded-[16px] border border-white/8 bg-[#070b14] p-6">
+                      <div className="rounded-[16px] border border-white/8 bg-white/[0.03] p-6">
                         <div className="flex items-center justify-between text-xs uppercase tracking-[0.14em] text-zinc-500">
                           <span>Equity curve</span>
                           <span>In attesa del primo ciclo chiuso</span>
