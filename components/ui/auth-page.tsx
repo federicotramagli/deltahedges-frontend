@@ -89,8 +89,8 @@ export function AuthPage({
           </blockquote>
         </div>
         <div className="absolute inset-0">
-          <FloatingPaths position={1} />
-          <FloatingPaths position={-1} />
+          <FloatingPaths position={1} className="text-[#26345f]" />
+          <FloatingPaths position={-1} className="text-[#26345f]" />
         </div>
       </div>
 
@@ -104,7 +104,7 @@ export function AuthPage({
           <div className="absolute bottom-[-10rem] left-[-8rem] h-[26rem] w-[26rem] rounded-full bg-[radial-gradient(circle,rgba(255,255,255,0.06)_0,transparent_70%)]" />
         </div>
         <div className="absolute inset-0 -z-10 overflow-hidden">
-          <FloatingPaths position={1} />
+          <FloatingPaths position={1} className="text-[#9aa4c5]/20" />
         </div>
 
         <a
@@ -307,7 +307,13 @@ export function AuthPage({
   );
 }
 
-function FloatingPaths({ position }: { position: number }) {
+function FloatingPaths({
+  position,
+  className,
+}: {
+  position: number;
+  className?: string;
+}) {
   const paths = Array.from({ length: 36 }, (_, i) => ({
     id: i,
     d: `M-${380 - i * 5 * position} -${189 + i * 6}C-${
@@ -323,7 +329,7 @@ function FloatingPaths({ position }: { position: number }) {
   return (
     <div className="pointer-events-none absolute inset-0">
       <svg
-        className="h-full w-full text-slate-950 dark:text-white"
+        className={cn("h-full w-full", className)}
         viewBox="0 0 696 316"
         fill="none"
       >
