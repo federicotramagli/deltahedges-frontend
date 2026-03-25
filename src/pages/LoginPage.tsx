@@ -10,6 +10,12 @@ const inputClass =
 
 export default function LoginPage() {
   const { user, loading } = useAuth();
+  const [isRegistering, setIsRegistering] = useState(false);
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [username, setUsername] = useState("");
+  const [country, setCountry] = useState("");
+  const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState<"login" | "signup" | null>(null);
@@ -18,7 +24,7 @@ export default function LoginPage() {
 
   useEffect(() => {
     setErrorMessage("");
-  }, [email, password]);
+  }, [email, password, firstName, lastName, username, country, phone, isRegistering]);
 
   if (!loading && user) {
     return <Navigate to="/" replace />;
@@ -46,11 +52,30 @@ export default function LoginPage() {
     setErrorMessage("");
     setInfoMessage("");
 
+    const missing = [];
+    if (!firstName.trim()) missing.push("nome");
+    if (!lastName.trim()) missing.push("cognome");
+    if (!username.trim()) missing.push("username");
+    if (!country.trim()) missing.push("nazione");
+    if (!phone.trim()) missing.push("telefono");
+
+    if (missing.length > 0) {
+      setErrorMessage(`Compila prima: ${missing.join(", ")}.`);
+      setSubmitting(null);
+      return;
+    }
+
     const { data, error } = await supabase.auth.signUp({
       email: email.trim(),
       password,
       options: {
         emailRedirectTo: `${window.location.origin}/login`,
+        data: {
+          full_name: `${firstName.trim()} ${lastName.trim()}`.trim(),
+          username: username.trim(),
+          country: country.trim(),
+          phone: phone.trim(),
+        },
       },
     });
 
@@ -64,6 +89,14 @@ export default function LoginPage() {
       setInfoMessage(
         "Controlla la tua email per confermare l'account prima di accedere.",
       );
+      setFirstName("");
+      setLastName("");
+      setUsername("");
+      setCountry("");
+      setPhone("");
+      setEmail("");
+      setPassword("");
+      setIsRegistering(false);
     }
 
     setSubmitting(null);
@@ -108,14 +141,120 @@ export default function LoginPage() {
               Accesso piattaforma
             </div>
             <h2 className="mt-4 text-3xl font-semibold tracking-tight text-white">
-              Accedi o crea il tuo account
+              {isRegistering ? "Crea il tuo account" : "Accedi alla piattaforma"}
             </h2>
             <p className="mt-3 text-sm leading-6 text-zinc-500">
-              Usa email e password. Se stai creando un account nuovo, dovrai
-              confermare l'email prima di entrare nella dashboard.
+              {isRegistering
+                ? "Compila i dati del profilo. Dopo la registrazione dovrai confermare l'email prima di entrare nella dashboard."
+                : "Usa email e password per entrare nella dashboard DeltaHedge."}
             </p>
 
+            <div className="mt-8 grid grid-cols-2 gap-3 rounded-xl border border-white/8 bg-white/[0.02] p-2">
+              <button
+                type="button"
+                className={`h-11 rounded-md text-sm font-medium transition ${
+                  !isRegistering
+                    ? "bg-[#D2FF00] text-black shadow-[0_18px_48px_rgba(210,255,0,0.16)]"
+                    : "text-zinc-400 hover:bg-white/[0.04] hover:text-white"
+                }`}
+                onClick={() => setIsRegistering(false)}
+                disabled={submitting !== null}
+              >
+                Accedi
+              </button>
+              <button
+                type="button"
+                className={`h-11 rounded-md text-sm font-medium transition ${
+                  isRegistering
+                    ? "bg-[#D2FF00] text-black shadow-[0_18px_48px_rgba(210,255,0,0.16)]"
+                    : "text-zinc-400 hover:bg-white/[0.04] hover:text-white"
+                }`}
+                onClick={() => setIsRegistering(true)}
+                disabled={submitting !== null}
+              >
+                Registrati
+              </button>
+            </div>
+
             <div className="mt-8 space-y-5">
+              {isRegistering ? (
+                <>
+                  <div className="grid gap-5 sm:grid-cols-2">
+                    <div>
+                      <label className="mb-2 block text-sm font-medium text-zinc-300">
+                        Nome
+                      </label>
+                      <input
+                        type="text"
+                        className={inputClass}
+                        placeholder="Mario"
+                        value={firstName}
+                        onChange={(event) => setFirstName(event.target.value)}
+                        autoComplete="given-name"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="mb-2 block text-sm font-medium text-zinc-300">
+                        Cognome
+                      </label>
+                      <input
+                        type="text"
+                        className={inputClass}
+                        placeholder="Rossi"
+                        value={lastName}
+                        onChange={(event) => setLastName(event.target.value)}
+                        autoComplete="family-name"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="mb-2 block text-sm font-medium text-zinc-300">
+                      Username
+                    </label>
+                    <input
+                      type="text"
+                      className={inputClass}
+                      placeholder="mariorossi"
+                      value={username}
+                      onChange={(event) => setUsername(event.target.value)}
+                      autoComplete="username"
+                    />
+                  </div>
+
+                  <div className="grid gap-5 sm:grid-cols-2">
+                    <div>
+                      <label className="mb-2 block text-sm font-medium text-zinc-300">
+                        Nazione
+                      </label>
+                      <input
+                        type="text"
+                        className={inputClass}
+                        placeholder="Italia"
+                        value={country}
+                        onChange={(event) => setCountry(event.target.value)}
+                        autoComplete="country-name"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="mb-2 block text-sm font-medium text-zinc-300">
+                        Numero di telefono
+                      </label>
+                      <input
+                        type="tel"
+                        className={inputClass}
+                        placeholder="+39 333 1234567"
+                        value={phone}
+                        onChange={(event) => setPhone(event.target.value)}
+                        autoComplete="tel"
+                      />
+                    </div>
+                  </div>
+                </>
+              ) : null}
+
               <div>
                 <label className="mb-2 block text-sm font-medium text-zinc-300">
                   Email
@@ -157,37 +296,53 @@ export default function LoginPage() {
               </div>
             ) : null}
 
-            <div className="mt-8 grid gap-3 sm:grid-cols-2">
-              <Button
-                type="button"
-                className="h-12 rounded-md bg-[#D2FF00] text-black shadow-[0_18px_48px_rgba(210,255,0,0.18)] hover:brightness-95"
-                onClick={handleLogin}
-                disabled={submitting !== null}
-              >
-                {submitting === "login" ? (
-                  <LoaderCircle className="size-4 animate-spin" />
-                ) : (
-                  <>
-                    Accedi
-                    <ArrowRight className="ml-2 size-4" />
-                  </>
-                )}
-              </Button>
+            {isRegistering ? (
+              <div className="mt-8 grid gap-3 sm:grid-cols-2">
+                <Button
+                  type="button"
+                  className="h-12 rounded-md bg-[#D2FF00] text-black shadow-[0_18px_48px_rgba(210,255,0,0.18)] hover:brightness-95"
+                  onClick={handleSignUp}
+                  disabled={submitting !== null}
+                >
+                  {submitting === "signup" ? (
+                    <LoaderCircle className="size-4 animate-spin" />
+                  ) : (
+                    <>
+                      Registrati
+                      <ArrowRight className="ml-2 size-4" />
+                    </>
+                  )}
+                </Button>
 
-              <Button
-                type="button"
-                variant="outline"
-                className="h-12 rounded-md border-white/12 bg-white/[0.03] text-white hover:bg-white/[0.06]"
-                onClick={handleSignUp}
-                disabled={submitting !== null}
-              >
-                {submitting === "signup" ? (
-                  <LoaderCircle className="size-4 animate-spin" />
-                ) : (
-                  "Registrati"
-                )}
-              </Button>
-            </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="h-12 rounded-md border-white/12 bg-white/[0.03] text-white hover:bg-white/[0.06]"
+                  onClick={() => setIsRegistering(false)}
+                  disabled={submitting !== null}
+                >
+                  Torna al login
+                </Button>
+              </div>
+            ) : (
+              <div className="mt-8">
+                <Button
+                  type="button"
+                  className="h-12 w-full rounded-md bg-[#D2FF00] text-black shadow-[0_18px_48px_rgba(210,255,0,0.18)] hover:brightness-95"
+                  onClick={handleLogin}
+                  disabled={submitting !== null}
+                >
+                  {submitting === "login" ? (
+                    <LoaderCircle className="size-4 animate-spin" />
+                  ) : (
+                    <>
+                      Accedi
+                      <ArrowRight className="ml-2 size-4" />
+                    </>
+                  )}
+                </Button>
+              </div>
+            )}
           </div>
         </div>
       </div>
