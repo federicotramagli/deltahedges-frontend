@@ -236,7 +236,7 @@ const inputClass =
   "h-11 w-full rounded-md border border-white/8 bg-white/[0.03] px-3 text-sm text-foreground outline-none transition placeholder:text-muted-foreground focus:border-primary/40 focus:ring-2 focus:ring-primary/20";
 
 const primaryButtonClass =
-  "rounded-md border border-primary/15 bg-[#D2FF00] text-[#0b0d05] shadow-[0_10px_24px_rgba(210,255,0,0.12)] hover:bg-[#D2FF00]/90";
+  "rounded-md border border-white/10 bg-primary text-primary-foreground shadow-[0_10px_24px_rgba(255,255,255,0.08)] hover:bg-primary/90";
 
 const secondaryButtonClass =
   "rounded-md border border-white/8 bg-white/[0.03] text-foreground hover:bg-white/[0.06]";
@@ -1323,7 +1323,7 @@ function FundingPipsWordmark({ className = "", large = false }) {
       } ${className}`}
     >
       <FundingPipsLogo
-        className={`${large ? "h-9 w-9" : "h-4 w-4"} shrink-0 text-[#D2FF00]`}
+        className={`${large ? "h-9 w-9" : "h-4 w-4"} shrink-0 text-white`}
       />
       <span
         className={`font-semibold tracking-[-0.035em] ${large ? "text-[28px] leading-none" : "text-sm"}`}
@@ -4752,15 +4752,37 @@ function App() {
         className="pointer-events-none absolute inset-0"
         style={{
           backgroundImage: `
-            radial-gradient(circle at top right, rgba(210,255,0,0.12), transparent 30%),
+            radial-gradient(circle at top right, rgba(255,255,255,0.12), transparent 30%),
             radial-gradient(circle at top right, rgba(255,255,255,0.07), transparent 18%),
-            radial-gradient(circle at bottom left, rgba(210,255,0,0.08), transparent 24%),
+            radial-gradient(circle at bottom left, rgba(255,255,255,0.06), transparent 24%),
             radial-gradient(circle, rgba(255,255,255,0.07) 1px, transparent 1px)
           `,
           backgroundSize: "auto, auto, auto, 18px 18px",
           backgroundPosition: "center, center, center, 0 0",
         }}
       />
+      <div className="pointer-events-none absolute inset-0 overflow-hidden">
+        <motion.div
+          className="absolute -right-24 top-[-12rem] h-[36rem] w-[36rem] rounded-full bg-[radial-gradient(circle,rgba(255,255,255,0.16)_0,rgba(255,255,255,0.02)_48%,transparent_72%)] blur-3xl"
+          animate={{
+            x: [0, -36, 0],
+            y: [0, 26, 0],
+            opacity: [0.24, 0.12, 0.24],
+            scale: [1, 1.08, 1],
+          }}
+          transition={{ duration: 16, repeat: Infinity, ease: "easeInOut" }}
+        />
+        <motion.div
+          className="absolute -left-28 bottom-[-14rem] h-[28rem] w-[28rem] rounded-full bg-[radial-gradient(circle,rgba(255,255,255,0.1)_0,rgba(255,255,255,0.02)_45%,transparent_72%)] blur-3xl"
+          animate={{
+            x: [0, 30, 0],
+            y: [0, -18, 0],
+            opacity: [0.16, 0.08, 0.16],
+            scale: [1, 1.06, 1],
+          }}
+          transition={{ duration: 18, repeat: Infinity, ease: "easeInOut" }}
+        />
+      </div>
       <div className="relative mx-auto max-w-[1600px] p-4 sm:p-6">
         <div className="grid gap-5 xl:grid-cols-[248px_minmax(0,1fr)]">
           <aside className="rounded-xl border border-border/80 bg-card/90 p-4 shadow-[0_24px_80px_rgba(0,0,0,0.3)] backdrop-blur-xl">
@@ -5250,7 +5272,7 @@ function App() {
                           key={section.question}
                           className={`overflow-hidden rounded-[18px] border transition ${
                             isOpen
-                              ? "border-primary/20 bg-[linear-gradient(180deg,rgba(210,255,0,0.08),rgba(255,255,255,0.02))]"
+                              ? "border-primary/20 bg-[linear-gradient(180deg,rgba(255,255,255,0.09),rgba(255,255,255,0.02))]"
                               : "border-white/8 bg-white/[0.03]"
                           }`}
                         >
@@ -5315,7 +5337,7 @@ function App() {
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4 p-6 text-sm text-zinc-400">
-                    <div className="rounded-[18px] border border-primary/20 bg-[linear-gradient(180deg,rgba(210,255,0,0.08),rgba(255,255,255,0.02))] p-5">
+                    <div className="rounded-[18px] border border-primary/20 bg-[linear-gradient(180deg,rgba(255,255,255,0.09),rgba(255,255,255,0.02))] p-5">
                       <div className="text-[11px] uppercase tracking-[0.14em] text-primary">
                         Sintesi
                       </div>
@@ -5375,7 +5397,7 @@ function App() {
                         >
                           <div className="absolute inset-y-0 left-0 w-px bg-white/8" />
                           <div className="flex items-start gap-4">
-                            <div className="flex size-11 shrink-0 items-center justify-center rounded-[14px] bg-primary text-primary-foreground shadow-[0_12px_32px_rgba(210,255,0,0.12)]">
+                            <div className="flex size-11 shrink-0 items-center justify-center rounded-[14px] bg-primary text-primary-foreground shadow-[0_12px_32px_rgba(255,255,255,0.08)]">
                               <span className="text-sm font-bold">{index + 1}</span>
                             </div>
                             <div className="min-w-0">

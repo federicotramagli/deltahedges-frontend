@@ -73,7 +73,7 @@ export function AuthPage({
       <div className="bg-muted/60 relative hidden h-full flex-col border-r border-white/6 p-10 lg:flex">
         <div className="from-background absolute inset-0 z-10 bg-gradient-to-t to-transparent" />
         <div className="z-10 flex items-center gap-2">
-          <Grid2x2PlusIcon className="size-6 text-[#D2FF00]" />
+          <Grid2x2PlusIcon className="size-6 text-white" />
           <p className="text-xl font-semibold text-white">DeltaHedge</p>
         </div>
         <div className="z-10 mt-auto">
@@ -83,7 +83,7 @@ export function AuthPage({
               volta, lasciare il motore nel cloud e monitorare l&apos;operativita
               in tempo reale.&rdquo;
             </p>
-            <footer className="font-mono text-sm font-semibold text-[#D2FF00]">
+            <footer className="font-mono text-sm font-semibold text-white/80">
               ~ DeltaHedge Cloud Runtime
             </footer>
           </blockquote>
@@ -99,9 +99,12 @@ export function AuthPage({
           aria-hidden
           className="absolute inset-0 isolate contain-strict -z-10 opacity-60"
         >
-          <div className="absolute top-0 right-0 h-[50rem] w-[22rem] rounded-full bg-[radial-gradient(circle,rgba(210,255,0,0.12)_0,rgba(210,255,0,0.03)_45%,transparent_80%)]" />
+          <div className="absolute top-0 right-0 h-[50rem] w-[22rem] rounded-full bg-[radial-gradient(circle,rgba(255,255,255,0.12)_0,rgba(255,255,255,0.025)_45%,transparent_80%)]" />
           <div className="absolute top-0 right-0 h-[50rem] w-[9rem] translate-y-[-14rem] rounded-full bg-[radial-gradient(circle,rgba(255,255,255,0.07)_0,rgba(255,255,255,0.02)_45%,transparent_80%)]" />
-          <div className="absolute bottom-[-10rem] left-[-8rem] h-[26rem] w-[26rem] rounded-full bg-[radial-gradient(circle,rgba(210,255,0,0.08)_0,transparent_70%)]" />
+          <div className="absolute bottom-[-10rem] left-[-8rem] h-[26rem] w-[26rem] rounded-full bg-[radial-gradient(circle,rgba(255,255,255,0.06)_0,transparent_70%)]" />
+        </div>
+        <div className="absolute inset-0 -z-10 overflow-hidden">
+          <FloatingPaths position={1} />
         </div>
 
         <a
@@ -114,7 +117,7 @@ export function AuthPage({
 
         <div className="mx-auto w-full max-w-sm space-y-4">
           <div className="flex items-center gap-2 lg:hidden">
-            <Grid2x2PlusIcon className="size-6 text-[#D2FF00]" />
+            <Grid2x2PlusIcon className="size-6 text-white" />
             <p className="text-xl font-semibold text-white">DeltaHedge</p>
           </div>
 
@@ -251,14 +254,14 @@ export function AuthPage({
             ) : null}
 
             {infoMessage ? (
-              <div className="rounded-xl border border-[#D2FF00]/20 bg-[#D2FF00]/10 px-3 py-2 text-sm text-[#D2FF00]">
+              <div className="rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-sm text-white">
                 {infoMessage}
               </div>
             ) : null}
 
             <Button
               type="submit"
-              className="mt-1 w-full bg-[#D2FF00] text-black hover:bg-[#D2FF00]/90"
+              className="mt-1 w-full"
               disabled={isBusy}
             >
               <span>
@@ -273,7 +276,7 @@ export function AuthPage({
             {isRegistering ? "Hai gia un account?" : "Non hai ancora un account?"}
             <button
               type="button"
-              className="ms-2 font-medium text-[#D2FF00] hover:underline"
+              className="ms-2 font-medium text-white hover:underline"
               onClick={() => onModeChange(!isRegistering)}
               disabled={isBusy}
             >
@@ -369,10 +372,10 @@ function InlineInput({
 }: InlineInputProps) {
   return (
     <div className="relative h-max">
-      <Input
+        <Input
         placeholder={placeholder}
         className={cn(
-          "peer h-11 border-white/8 bg-white/[0.03] ps-9 text-white placeholder:text-zinc-500 focus-visible:border-[#D2FF00]/40 focus-visible:ring-[#D2FF00]/20",
+          "peer h-11 border-white/8 bg-white/[0.03] ps-9 text-white placeholder:text-zinc-500 focus-visible:border-white/30 focus-visible:ring-white/15",
           type === "password" && "tracking-[0.12em]",
         )}
         type={type}
