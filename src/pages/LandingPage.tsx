@@ -15,49 +15,28 @@ import { BackgroundPaths } from "@/components/ui/background-paths";
 import { Button } from "@/components/ui/button";
 import dashboardPreview from "../../dashboard-minimal-overview.png";
 
-const heroPoints = [
-  "Colleghi challenge e broker una sola volta",
-  "Controlli tutto dal browser, senza software locale",
-  "Il ciclo non dipende soltanto dalla direzione del mercato",
+const statCards = [
+  { value: "Cloud", label: "lavora anche a browser chiuso" },
+  { value: "2 conti", label: "challenge e broker insieme" },
+  { value: "1 dashboard", label: "tutto leggibile da qui" },
 ];
 
-const featureCards = [
-  {
-    icon: Cloud,
-    title: "Lavora anche se chiudi il browser",
-    description:
-      "DeltaHedge continua a seguire la coppia anche quando tu non sei davanti al computer.",
-  },
+const howItWorks = [
   {
     icon: WalletCards,
-    title: "Due conti, una sola logica",
+    title: "Colleghi i due conti",
     description:
-      "Un conto prova a portare avanti la challenge. L’altro accompagna il percorso e aiuta a bilanciare il ciclo.",
-  },
-  {
-    icon: LayoutDashboard,
-    title: "Una dashboard chiara",
-    description:
-      "Vedi subito slot, stato della coppia, connessioni e prossimo passo senza perderti in schermate confuse.",
-  },
-];
-
-const steps = [
-  {
-    icon: WalletCards,
-    title: "1. Colleghi i due conti",
-    description:
-      "Inserisci challenge e broker una volta sola. Li ritrovi sempre salvati e pronti.",
+      "Inserisci challenge e broker una sola volta. Da lì in poi li ritrovi già pronti nella piattaforma.",
   },
   {
     icon: PlayCircle,
-    title: "2. Accendi la coppia",
+    title: "Accendi la coppia",
     description:
-      "Quando i due lati sono collegati bene, DeltaHedge li prepara e li mette a lavorare insieme.",
+      "Quando i due lati sono collegati bene, DeltaHedge li prepara e li fa lavorare insieme.",
   },
   {
     icon: TimerReset,
-    title: "3. Controlli tutto da qui",
+    title: "Controlli tutto da qui",
     description:
       "Apri la dashboard e capisci subito se la coppia è pronta, in attesa oppure già attiva.",
   },
@@ -65,26 +44,26 @@ const steps = [
 
 const reasons = [
   {
+    icon: Cloud,
+    title: "Zero installazioni",
+    description:
+      "Niente VPS, niente terminali da tenere aperti e niente software da far girare sul tuo computer.",
+  },
+  {
     icon: ShieldCheck,
-    title: "Meno attrito",
+    title: "Meno dipendenza dalla direzione",
     description:
-      "Non devi incastrare tool diversi o interpretare setup complicati per partire.",
+      "L’idea è semplice: un conto prova a passare la challenge, l’altro accompagna il percorso e aiuta a bilanciare il ciclo.",
   },
   {
-    icon: Sparkles,
-    title: "Più semplicità",
+    icon: LayoutDashboard,
+    title: "Più chiarezza",
     description:
-      "Spieghiamo tutto in modo chiaro, così sai sempre cosa succede e qual è il passo successivo.",
-  },
-  {
-    icon: CheckCircle2,
-    title: "Più controllo",
-    description:
-      "Hai una vista unica su connessioni, stato della coppia e avanzamento del ciclo.",
+      "Hai una vista unica su stato delle coppie, connessioni, progressi e risultati, senza schermate caotiche.",
   },
 ];
 
-function FeatureCard({
+function InfoCard({
   icon: Icon,
   title,
   description,
@@ -169,21 +148,20 @@ export default function LandingPage() {
         </div>
 
         <div className="relative z-10 mx-auto max-w-7xl px-4 pb-24 pt-10 md:px-8 md:pb-28 md:pt-16">
-          <div className="grid items-center gap-14 lg:grid-cols-[0.96fr_1.04fr]">
+          <div className="grid gap-10 lg:grid-cols-[0.92fr_1.08fr] lg:items-center">
             <div className="max-w-3xl">
               <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-xs uppercase tracking-[0.28em] text-zinc-300">
                 <Sparkles className="size-3.5" />
-                Coppie cloud per challenge e broker
+                Hedging semplice tra prop e broker
               </div>
 
               <h1 className="text-5xl font-semibold tracking-[-0.05em] text-white sm:text-6xl md:text-7xl">
-                Il modo più semplice per far lavorare insieme prop e broker.
+                La piattaforma che fa lavorare due conti insieme, in modo più ordinato.
               </h1>
 
               <p className="mt-6 max-w-2xl text-lg leading-8 text-zinc-400 md:text-xl">
-                In parole povere: un conto prova a passare la challenge, l’altro
-                accompagna il percorso. Così il risultato non dipende solo dal mercato
-                che sale o scende.
+                In parole povere: un conto prova a passare la challenge, l’altro accompagna
+                il percorso. Così il risultato non dipende soltanto dal mercato che sale o scende.
               </p>
 
               <div className="mt-8 flex flex-col gap-3 sm:flex-row">
@@ -208,12 +186,13 @@ export default function LandingPage() {
               </div>
 
               <div className="mt-10 grid gap-3 sm:grid-cols-3">
-                {heroPoints.map((point) => (
+                {statCards.map((item) => (
                   <div
-                    key={point}
-                    className="rounded-[22px] border border-white/10 bg-white/[0.03] px-4 py-4 text-sm leading-6 text-zinc-300"
+                    key={item.label}
+                    className="rounded-[24px] border border-white/10 bg-white/[0.03] px-5 py-5 backdrop-blur-xl"
                   >
-                    {point}
+                    <p className="text-2xl font-semibold text-white">{item.value}</p>
+                    <p className="mt-2 text-sm leading-6 text-zinc-400">{item.label}</p>
                   </div>
                 ))}
               </div>
@@ -247,10 +226,12 @@ export default function LandingPage() {
       </section>
 
       <section className="mx-auto max-w-7xl px-4 py-18 md:px-8">
-        <div className="grid gap-5 lg:grid-cols-3">
-          {featureCards.map((card) => (
-            <FeatureCard key={card.title} {...card} />
-          ))}
+        <div className="rounded-[36px] border border-white/10 bg-white/[0.03] p-8 backdrop-blur-xl md:p-10">
+          <div className="grid gap-5 lg:grid-cols-3">
+            {reasons.map((item) => (
+              <InfoCard key={item.title} {...item} />
+            ))}
+          </div>
         </div>
       </section>
 
@@ -263,34 +244,17 @@ export default function LandingPage() {
             Come funziona
           </p>
           <h2 className="text-3xl font-semibold tracking-tight text-white md:text-5xl">
-            Ti accompagniamo dal primo collegamento fino alla coppia attiva.
+            Tutto è pensato per partire senza attrito.
           </h2>
           <p className="mt-5 text-lg leading-8 text-zinc-400">
-            Non devi inseguire strumenti diversi o configurazioni complicate. Parti,
-            colleghi i conti e da lì capisci tutto da una sola schermata.
+            Non devi inseguire strumenti diversi o configurazioni complicate.
+            Parti, colleghi i conti e da lì capisci tutto da una sola schermata.
           </p>
         </div>
 
         <div className="grid gap-5 lg:grid-cols-3">
-          {steps.map((step) => (
-            <FeatureCard key={step.title} {...step} />
-          ))}
-        </div>
-      </section>
-
-      <section className="mx-auto max-w-7xl px-4 py-20 md:px-8">
-        <div className="mb-10 max-w-3xl">
-          <p className="mb-3 text-xs uppercase tracking-[0.3em] text-zinc-500">
-            Perché piace
-          </p>
-          <h2 className="text-3xl font-semibold tracking-tight text-white md:text-4xl">
-            Meno attrito, meno rumore, più chiarezza.
-          </h2>
-        </div>
-
-        <div className="grid gap-5 lg:grid-cols-3">
-          {reasons.map((reason) => (
-            <FeatureCard key={reason.title} {...reason} />
+          {howItWorks.map((item) => (
+            <InfoCard key={item.title} {...item} />
           ))}
         </div>
       </section>
@@ -301,12 +265,11 @@ export default function LandingPage() {
             Inizia da qui
           </p>
           <h2 className="mx-auto max-w-4xl text-3xl font-semibold tracking-tight text-white md:text-5xl">
-            Se vuoi far lavorare insieme challenge e broker in modo più ordinato,
-            qui parte tutto.
+            Se vuoi un modo più semplice per far lavorare insieme prop e broker, qui parte tutto.
           </h2>
           <p className="mx-auto mt-5 max-w-2xl text-lg leading-8 text-zinc-400">
-            Apri DeltaHedge, collega la coppia e lascia che la piattaforma faccia il
-            lavoro pesante. Tu torni nella dashboard per vedere tutto in chiaro.
+            Apri DeltaHedge, collega la coppia e lascia che la piattaforma faccia il lavoro pesante.
+            Tu torni nella dashboard per vedere tutto in chiaro.
           </p>
           <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
             <Button
