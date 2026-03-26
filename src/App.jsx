@@ -4654,81 +4654,86 @@ function App() {
 
   const strategyGuideSections = [
     {
-      question: "Perché tradiamo sia la challenge prop sia il broker?",
+      question: "In una frase: che cosa fa DeltaHedge?",
       answer:
-        "I due lati non servono alla stessa cosa. La challenge prop serve a superare Fase 1, Fase 2 e arrivare al funded. Il broker serve a bilanciare il rischio economico del ciclo mentre la challenge si muove verso pass o fail.",
+        "DeltaHedge mette insieme due conti e li fa lavorare come una coppia. Il primo conto prova a passare la challenge. Il secondo conto serve a proteggere il capitale mentre il primo si muove.",
     },
     {
-      question: "Cosa succede in pratica quando il bot apre un trade?",
+      question: "Perché usiamo due conti invece di uno solo?",
       answer:
-        "Quando arriva un setup, il sistema apre due trade insieme: uno sulla prop e uno sul broker. La prop comanda la lot size. Il broker segue con il moltiplicatore della fase. Se una gamba entra e l'altra no, il sistema chiude subito quella rimasta scoperta.",
+        "Perché i due conti hanno due lavori diversi. La challenge serve per arrivare a Fase 1, Fase 2 e poi funded. Il broker serve per assorbire il colpo quando la challenge sale o scende. Uno spinge il percorso, l'altro aiuta a controllare il rischio.",
     },
     {
-      question: "Se la challenge passa, il broker perde per forza?",
+      question: "Cosa succede davvero quando il motore apre un trade?",
       answer:
-        "Quando la challenge passa, il broker subisce una perdita prevista dal ciclo. Non è un errore: è il costo controllato con cui la strategia avanza di fase. Il sistema aggiorna poi target e moltiplicatore per la fase successiva.",
+        "Quando il motore vede un ingresso, apre un trade sulla challenge e uno sul broker quasi nello stesso momento. La challenge decide la size principale. Il broker la segue con la sua size calcolata. Se uno dei due non entra bene, il sistema prova a chiudere subito per non restare scoperto.",
     },
     {
-      question: "Se la challenge fallisce, cosa recupera il broker?",
+      question: "Se la challenge passa una fase, il broker perde: è normale?",
       answer:
-        "Se la challenge va in fail, il broker deve recuperare il target pianificato del ciclo. In quel punto il ciclo si chiude, il netto viene archiviato e la dashboard lo registra tra i cicli terminati.",
+        "Sì. È il prezzo controllato che paghiamo per far avanzare la challenge alla fase successiva. Non significa che qualcosa si è rotto. Significa che il ciclo sta seguendo il piano deciso dal motore.",
     },
     {
-      question: "Cosa controlla davvero il software mentre è attivo?",
+      question: "Se invece la challenge fallisce, cosa succede?",
       answer:
-        "DeltaHedge controlla sincronizzazione ordini, stato connessioni, preset rischio, posizione del ciclo, trade eseguiti lato prop e lato broker. Più avanti mostrerà anche unrealized PnL live con stream diretto.",
+        "Se la challenge fallisce, il broker deve aver recuperato il target pensato per quel ciclo. In quel momento il ciclo si chiude, il risultato viene salvato nei log e la dashboard te lo mostra in modo semplice.",
     },
     {
-      question: "Perché c'è il controllo del 30% sul broker iniziale?",
+      question: "Cosa controlla il software mentre lavori o dormi?",
       answer:
-        "Prima dell'attivazione, il preset verifica che la perdita stimata al passaggio di Fase 1 e Fase 2 non superi il 30% del broker iniziale. Serve a evitare che il broker si scarichi troppo presto mentre la challenge continua.",
+        "Controlla se i conti sono collegati, se i due trade entrano bene, quanto manca al pass o al fail, quanto stanno muovendo prop e broker e se il ciclo deve fermarsi. Tu non devi stare davanti al grafico per capire ogni secondo cosa succede.",
+    },
+    {
+      question: "Perché c'è la regola del 30% sul broker iniziale?",
+      answer:
+        "Perché non vogliamo consumare troppo in fretta il broker mentre la challenge continua il suo percorso. È una cintura di sicurezza: se la perdita prevista è troppo alta, il sistema ti avvisa prima di partire.",
     },
   ];
 
   const platformGuideSections = [
     {
       title: "1. Crea lo slot",
-      body: "Premi il bottone + in alto a destra e scegli la challenge. Non serve inserire subito tutto.",
+      body: "Premi il bottone + e scegli la challenge. Pensa allo slot come a una scatola dove vivranno insieme challenge e broker.",
     },
     {
       title: "2. Collega i conti",
-      body: "Apri lo slot e inserisci login, password e server sia per la challenge sia per il broker.",
+      body: "Apri lo slot e inserisci login, password e server della challenge e del broker. Quando i due lati sono dentro, la coppia è completa.",
     },
     {
       title: "3. Usa il preset",
-      body: "Apri Parametri trading e salva il preset consigliato. Le opzioni avanzate possono aspettare.",
+      body: "Apri Parametri trading e salva il preset consigliato. Se sei all'inizio, non devi toccare subito le opzioni avanzate.",
     },
     {
       title: "4. Attiva e monitora",
-      body: "Quando challenge, broker e preset sono completi, attiva. Da quel momento vedrai i trade eseguiti e, appena colleghiamo MetaApi, anche l'unrealized PnL live.",
+      body: "Quando tutto è pronto, premi attiva. Da lì in poi la dashboard ti fa vedere se la coppia è viva, cosa sta facendo e come stanno andando i due conti.",
     },
   ];
 
   let nextActionLabel = "Crea il primo slot";
   let nextActionDescription =
-    "Parti da qui. Dopo ti guideremo passo per passo, senza chiederti tutto insieme.";
+    "Parti da qui. Ti accompagniamo un pezzo alla volta, senza riempirti di impostazioni inutili.";
   let nextActionHandler = openAddSlot;
 
   if (selectedSlot) {
     if (!hasPropConnection(selectedSlot) || !hasBrokerConnection(selectedSlot)) {
       nextActionLabel = "Collega i conti";
       nextActionDescription =
-        "Inserisci prima challenge e broker. E l'unico passaggio tecnico da completare adesso.";
+        "Adesso ci servono solo i due accessi: challenge e broker. Una volta messi, la coppia può iniziare a vivere.";
       nextActionHandler = () => openSlotConnections(selectedSlot.id);
     } else if (!hasStrategyParameters(selectedSlot)) {
       nextActionLabel = "Scegli il preset consigliato";
       nextActionDescription =
-        "Ti proponiamo un preset guidato. Le impostazioni avanzate possono aspettare.";
+        "Qui scegli come vuoi far lavorare il motore. Se non vuoi complicarti la vita, usa il preset consigliato.";
       nextActionHandler = () => openSlotParameters(selectedSlot.id);
     } else if (selectedSlot.challengeState !== "ATTIVA") {
       nextActionLabel = "Attiva la challenge";
       nextActionDescription =
-        "Fai il controllo finale e porta online lo slot con un solo comando.";
+        "Controlla l'ultimo riepilogo e accendi la coppia. Da lì in poi il sistema inizia a sorvegliarla per te.";
       nextActionHandler = () => openActivateSlot(selectedSlot.id);
     } else {
       nextActionLabel = "Apri il ciclo";
       nextActionDescription =
-        "Lo slot e gia attivo. Da qui in poi vedrai solo lo stato operativo reale.";
+        "La coppia è già accesa. Qui dentro puoi vedere in modo semplice se sta bene, se è in pericolo o se sta avanzando.";
       nextActionHandler = () => openSlotDetail(selectedSlot.id);
     }
   }
@@ -5333,7 +5338,7 @@ function App() {
                       In pratica
                     </CardTitle>
                     <CardDescription className="text-zinc-500">
-                      Tre cose da ricordare prima di partire davvero.
+                      La spiegazione corta, semplice e utile prima di iniziare.
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4 p-6 text-sm text-zinc-400">
@@ -5342,17 +5347,17 @@ function App() {
                         Sintesi
                       </div>
                       <div className="mt-3 text-2xl font-semibold text-white">
-                        Uno slot = una challenge + un broker
+                        Uno slot è una coppia: un conto prova a passare, l'altro aiuta a proteggere
                       </div>
                       <div className="mt-2 leading-7 text-zinc-300">
-                        Tutta la logica del prodotto gira attorno a questa coppia. Se uno dei due lati manca, il ciclo non parte.
+                        Tutto il prodotto gira attorno a questa idea. Se manca uno dei due conti, il motore non può lavorare bene e il ciclo non parte.
                       </div>
                     </div>
 
                     {[
-                      "Senza collegare entrambi i conti, non puoi attivare nulla.",
-                      "Il preset consigliato basta per partire, l'avanzato può aspettare.",
-                      "Se vuoi lavorare davvero, la pagina utile resta Panoramica.",
+                      "Prima colleghi due conti, poi il sistema li fa lavorare insieme.",
+                      "Non devi capire tutta la matematica per partire: il preset consigliato basta.",
+                      "La pagina più importante è Panoramica, perché lì capisci subito cosa sta facendo ogni coppia.",
                     ].map((item) => (
                       <div
                         key={item}
@@ -5382,10 +5387,10 @@ function App() {
                       Onboarding visuale
                     </Badge>
                     <CardTitle className="mt-4 text-3xl tracking-tight text-white">
-                      Come usare la piattaforma, senza pensare troppo
+                      Come usare DeltaHedge, spiegato in modo semplice
                     </CardTitle>
                     <CardDescription className="max-w-3xl text-zinc-500">
-                      La logica è semplice: crei lo slot, colleghi i due lati, salvi il preset e attivi. Qui sotto lo vedi in un flusso più premium e più leggibile.
+                      L'idea è questa: prepari la coppia, la accendi e poi la controlli da qui. Non devi fare giri strani o lavorare con dieci pagine diverse.
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="p-6">
@@ -5425,7 +5430,7 @@ function App() {
                       Checklist rapida
                     </CardTitle>
                     <CardDescription className="text-zinc-500">
-                      Le uniche cose che contano davvero per andare live.
+                      Le poche cose che servono davvero per partire.
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4 p-6 text-sm text-zinc-400">
@@ -5437,7 +5442,7 @@ function App() {
                         {onboardingSteps.filter((step) => step.done).length}/{onboardingSteps.length}
                       </div>
                       <div className="mt-2 text-sm leading-6 text-zinc-400">
-                        Appena completi tutti i passaggi, lo slot può essere acceso senza altri giri.
+                        Quando tutti i passaggi sono completi, la coppia è pronta e puoi accenderla senza altre complicazioni.
                       </div>
                     </div>
 
@@ -5495,24 +5500,24 @@ function App() {
                       Prima coppia, zero attrito
                     </CardTitle>
                     <CardDescription className="text-zinc-500">
-                      Ti servono solo gli accessi della challenge e del broker. Il resto lo imposta DeltaHedge nel flusso guidato.
+                      Ti servono solo i dati dei due conti. DeltaHedge fa il resto e ti guida passo per passo.
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="grid gap-8 p-6 lg:grid-cols-[1fr_1fr]">
                     <div>
                       <div className="text-sm font-medium text-white">Cosa preparare</div>
                       <div className="mt-4 space-y-3 text-sm text-zinc-400">
-                        <div>Login, password e server della challenge prop.</div>
-                        <div>Login, password e server del broker.</div>
-                        <div>Il preset consigliato basta per partire.</div>
+                        <div>I dati della challenge: login, password e server.</div>
+                        <div>I dati del broker: login, password e server.</div>
+                        <div>Il preset consigliato, se vuoi partire in modo semplice.</div>
                       </div>
                     </div>
                     <div>
-                      <div className="text-sm font-medium text-white">Cosa vedrai dopo</div>
+                      <div className="text-sm font-medium text-white">Cosa succede dopo</div>
                       <div className="mt-4 space-y-3 text-sm text-zinc-400">
-                        <div>Stato della coppia e checklist di attivazione.</div>
-                        <div>Trade separati tra lato prop e lato broker.</div>
-                        <div>Unrealized PnL live appena il backend riceve i dati reali.</div>
+                        <div>Vedrai subito se la coppia è pronta, in attesa o attiva.</div>
+                        <div>Vedrai i trade divisi in modo chiaro tra prop e broker.</div>
+                        <div>Vedrai equity e PnL live appena il backend riceve i dati reali.</div>
                       </div>
                       <div className="mt-5 flex flex-wrap gap-3">
                         <Button
@@ -5560,7 +5565,7 @@ function App() {
                           Le tue coppie
                         </CardTitle>
                         <CardDescription className="text-muted-foreground">
-                          Uno slot = una challenge prop collegata a un broker. Qui sotto trovi solo stato, progressione e azioni utili.
+                          Qui vedi le coppie che lavorano per te. Ogni coppia ha due conti: uno prova a passare la challenge, l'altro aiuta a proteggere il percorso.
                         </CardDescription>
                       </div>
                       <Badge className="border-border/80 bg-muted/35 text-muted-foreground hover:bg-muted/35">
@@ -5791,7 +5796,7 @@ function App() {
                 </Card>
 
                 <div className="flex flex-wrap items-center gap-3 text-sm text-zinc-500">
-                  <span>Uno slot = una challenge + un broker.</span>
+                  <span>Una coppia = challenge da una parte, broker dall'altra.</span>
                   <span className="text-white/20">•</span>
                   <button
                     type="button"
