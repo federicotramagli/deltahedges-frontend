@@ -71,6 +71,7 @@ export function BackgroundPaths({
   onPrimaryClick,
   onSecondaryClick,
 }: BackgroundPathsProps) {
+  const showContent = Boolean(title || description || primaryLabel || secondaryLabel);
   const words = title.split(" ");
 
   return (
@@ -81,65 +82,67 @@ export function BackgroundPaths({
       </div>
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.12),transparent_28%),radial-gradient(circle_at_bottom_left,rgba(39,61,115,0.24),transparent_32%)]" />
 
-      <div className="relative z-10 container mx-auto px-4 text-center md:px-6">
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 1.4 }}
-          className="mx-auto max-w-5xl"
-        >
-          <div className="mb-5 inline-flex items-center rounded-full border border-white/10 bg-white/[0.03] px-4 py-1.5 text-xs uppercase tracking-[0.32em] text-zinc-400 backdrop-blur-md">
-            DeltaHedge Cloud Engine
-          </div>
+      {showContent ? (
+        <div className="relative z-10 container mx-auto px-4 text-center md:px-6">
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 1.4 }}
+            className="mx-auto max-w-5xl"
+          >
+            <div className="mb-5 inline-flex items-center rounded-full border border-white/10 bg-white/[0.03] px-4 py-1.5 text-xs uppercase tracking-[0.32em] text-zinc-400 backdrop-blur-md">
+              DeltaHedge Cloud Engine
+            </div>
 
-          <h1 className="mb-8 text-5xl font-bold tracking-tighter sm:text-7xl md:text-8xl">
-            {words.map((word, wordIndex) => (
-              <span key={wordIndex} className="mr-4 inline-block last:mr-0">
-                {word.split("").map((letter, letterIndex) => (
-                  <motion.span
-                    key={`${wordIndex}-${letterIndex}`}
-                    initial={{ y: 100, opacity: 0 }}
-                    animate={{ y: 0, opacity: 1 }}
-                    transition={{
-                      delay: wordIndex * 0.1 + letterIndex * 0.03,
-                      type: "spring",
-                      stiffness: 150,
-                      damping: 25,
-                    }}
-                    className="inline-block bg-gradient-to-r from-white to-white/70 bg-clip-text text-transparent"
-                  >
-                    {letter}
-                  </motion.span>
-                ))}
-              </span>
-            ))}
-          </h1>
+            <h1 className="mb-8 text-5xl font-bold tracking-tighter sm:text-7xl md:text-8xl">
+              {words.map((word, wordIndex) => (
+                <span key={wordIndex} className="mr-4 inline-block last:mr-0">
+                  {word.split("").map((letter, letterIndex) => (
+                    <motion.span
+                      key={`${wordIndex}-${letterIndex}`}
+                      initial={{ y: 100, opacity: 0 }}
+                      animate={{ y: 0, opacity: 1 }}
+                      transition={{
+                        delay: wordIndex * 0.1 + letterIndex * 0.03,
+                        type: "spring",
+                        stiffness: 150,
+                        damping: 25,
+                      }}
+                      className="inline-block bg-gradient-to-r from-white to-white/70 bg-clip-text text-transparent"
+                    >
+                      {letter}
+                    </motion.span>
+                  ))}
+                </span>
+              ))}
+            </h1>
 
-          <p className="mx-auto mb-10 max-w-3xl text-balance text-lg leading-8 text-zinc-400 sm:text-xl">
-            {description}
-          </p>
+            <p className="mx-auto mb-10 max-w-3xl text-balance text-lg leading-8 text-zinc-400 sm:text-xl">
+              {description}
+            </p>
 
-          <div className="flex flex-col items-center justify-center gap-3 sm:flex-row">
-            <Button
-              type="button"
-              size="lg"
-              className="min-w-52 rounded-2xl border border-white/10 bg-white text-black shadow-lg shadow-white/10 hover:bg-white/90"
-              onClick={onPrimaryClick}
-            >
-              {primaryLabel}
-            </Button>
-            <Button
-              type="button"
-              variant="ghost"
-              size="lg"
-              className="min-w-52 rounded-2xl border border-white/10 bg-white/[0.04] text-white hover:bg-white/[0.08]"
-              onClick={onSecondaryClick}
-            >
-              {secondaryLabel}
-            </Button>
-          </div>
-        </motion.div>
-      </div>
+            <div className="flex flex-col items-center justify-center gap-3 sm:flex-row">
+              <Button
+                type="button"
+                size="lg"
+                className="min-w-52 rounded-2xl border border-white/10 bg-white text-black shadow-lg shadow-white/10 hover:bg-white/90"
+                onClick={onPrimaryClick}
+              >
+                {primaryLabel}
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="lg"
+                className="min-w-52 rounded-2xl border border-white/10 bg-white/[0.04] text-white hover:bg-white/[0.08]"
+                onClick={onSecondaryClick}
+              >
+                {secondaryLabel}
+              </Button>
+            </div>
+          </motion.div>
+        </div>
+      ) : null}
     </div>
   );
 }
