@@ -1,65 +1,89 @@
 import { useNavigate } from "react-router-dom";
 import {
   ArrowRight,
+  BarChart3,
+  CheckCircle2,
+  Clock3,
   Cloud,
-  ShieldCheck,
-  Activity,
+  Eye,
+  LaptopMinimal,
   Link2,
+  MoveRight,
+  ShieldCheck,
   PlayCircle,
   TimerReset,
-  Eye,
+  TrendingUp,
 } from "lucide-react";
 
 import { BackgroundPaths } from "@/components/ui/background-paths";
 import { Button } from "@/components/ui/button";
+import dashboardPreview from "../../dashboard-cloud-premium.png";
 
 const features = [
   {
-    icon: Cloud,
-    title: "Runtime cloud, non locale",
+    icon: LaptopMinimal,
+    title: "Non devi installare nulla",
     description:
-      "Niente EA sul tuo PC, niente VPS da tenere vivo. DeltaHedge gira lato server e continua a lavorare anche quando chiudi il browser.",
+      "Non devi tenere acceso il computer e non devi configurare soluzioni complicate. Colleghi i conti e poi controlli tutto dal browser.",
   },
   {
-    icon: ShieldCheck,
-    title: "Risk engine per challenge",
+    icon: TrendingUp,
+    title: "Non vivi di sola direzione",
     description:
-      "Monitoraggio continuo di fase, hard fail, hidden exit e sync prop-broker. L’obiettivo è tenere l’operatività leggibile e disciplinata.",
+      "L’idea è semplice: usiamo un conto challenge e un broker insieme, così il risultato del ciclo non dipende soltanto dal mercato che sale o scende.",
   },
   {
-    icon: Activity,
-    title: "Monitor live per ogni slot",
+    icon: Eye,
+    title: "Capisci subito cosa sta succedendo",
     description:
-      "Ogni slot mostra connessioni, equity, unrealized PnL, proiezioni e stato del ciclo, così il cliente capisce subito cosa sta succedendo.",
+      "La dashboard ti fa vedere connessioni, stato della coppia, andamento del ciclo e movimenti dei due conti in modo semplice e leggibile.",
   },
 ];
 
 const steps = [
   {
     icon: Link2,
-    title: "1. Collega challenge e broker",
+    title: "1. Colleghi due conti",
     description:
-      "Importi i due conti una sola volta. DeltaHedge li salva per utente e prepara le connessioni cloud lato MetaApi.",
+      "Un conto serve per la challenge prop. L’altro è il broker che accompagna il percorso. Tu li inserisci una sola volta.",
   },
   {
     icon: PlayCircle,
-    title: "2. Attiva lo slot",
+    title: "2. Accendi la coppia",
     description:
-      "Imposti i parametri del ciclo e fai partire il motore. La coppia entra in esecuzione solo quando entrambi i lati sono realmente connessi.",
+      "Quando i due conti sono pronti, DeltaHedge li mette a lavorare insieme. Se uno dei due non è collegato bene, il sistema aspetta.",
   },
   {
     icon: TimerReset,
-    title: "3. Lascia lavorare il motore",
+    title: "3. Controlli tutto da una sola schermata",
     description:
-      "Il worker gestisce entry, monitoraggio equity, hidden stop e chiusure forzate. L’utente torna in dashboard solo per controllare.",
+      "Tu non devi inseguire grafici e pannelli diversi. Apri la dashboard e vedi subito se la coppia è in salute, in attesa o in azione.",
   },
 ];
 
-const observability = [
-  "Connessione MetaApi per challenge e broker",
-  "Equity e unrealized PnL in tempo reale",
-  "Proiezione del broker se la fase passa o fallisce",
-  "Storico trade separato tra PROP e BROKER",
+const outcomes = [
+  "Un conto prova a passare la challenge.",
+  "L’altro conto aiuta a bilanciare il percorso.",
+  "Il risultato del ciclo non dipende solo da un lato del mercato.",
+  "Tu leggi tutto in modo semplice da una sola dashboard.",
+];
+
+const proofPoints = [
+  {
+    icon: Cloud,
+    title: "Cloud-first",
+    description: "DeltaHedge continua a lavorare anche quando chiudi il browser.",
+  },
+  {
+    icon: ShieldCheck,
+    title: "Più controllo",
+    description: "La coppia viene osservata continuamente, così sai sempre se è pronta, attiva o da fermare.",
+  },
+  {
+    icon: BarChart3,
+    title: "Più chiarezza",
+    description: "Vedi prop, broker, PnL e progresso del ciclo senza dover interpretare schermate piene di rumore.",
+  },
 ];
 
 function SectionCard({
@@ -102,6 +126,24 @@ export default function LandingPage() {
           </div>
 
           <div className="hidden items-center gap-3 md:flex">
+            <button
+              type="button"
+              className="text-sm text-zinc-400 transition hover:text-white"
+              onClick={() =>
+                document.getElementById("come-funziona")?.scrollIntoView({ behavior: "smooth" })
+              }
+            >
+              Come funziona
+            </button>
+            <button
+              type="button"
+              className="text-sm text-zinc-400 transition hover:text-white"
+              onClick={() =>
+                document.getElementById("dashboard-preview")?.scrollIntoView({ behavior: "smooth" })
+              }
+            >
+              Dashboard
+            </button>
             <Button
               type="button"
               variant="ghost"
@@ -121,27 +163,44 @@ export default function LandingPage() {
         </div>
 
         <BackgroundPaths
-          title="Run your prop pair in the cloud"
-          description="DeltaHedge collega challenge e broker, prepara il motore runtime, monitora la progressione di fase e ti restituisce una dashboard semplice da leggere anche per utenti non tecnici."
-          primaryLabel="Accedi alla dashboard"
-          secondaryLabel="Scopri il workflow"
+          title="Due conti che lavorano insieme"
+          description="In parole povere: un conto prova a passare la challenge, l’altro fa da bilanciamento. Così il profitto del ciclo non dipende soltanto dalla direzione del mercato."
+          primaryLabel="Apri DeltaHedge"
+          secondaryLabel="Guarda come funziona"
           onPrimaryClick={() => navigate("/login")}
           onSecondaryClick={() =>
-            document.getElementById("how-it-works")?.scrollIntoView({ behavior: "smooth" })
+            document.getElementById("come-funziona")?.scrollIntoView({ behavior: "smooth" })
           }
         />
       </section>
 
-      <section className="mx-auto max-w-7xl px-4 py-20 md:px-8">
-        <div className="mb-10 flex items-end justify-between gap-6">
-          <div className="max-w-2xl">
-            <p className="mb-3 text-xs uppercase tracking-[0.3em] text-zinc-500">
-              Perche DeltaHedge
-            </p>
-            <h2 className="text-3xl font-semibold tracking-tight text-white md:text-4xl">
-              Un SaaS costruito per prop traders che vogliono cloud execution, non workaround locali.
-            </h2>
+      <section className="relative z-10 mx-auto -mt-28 max-w-7xl px-4 md:px-8">
+        <div className="rounded-[32px] border border-white/10 bg-white/[0.04] p-3 shadow-[0_30px_120px_rgba(0,0,0,0.45)] backdrop-blur-2xl">
+          <div
+            id="dashboard-preview"
+            className="overflow-hidden rounded-[26px] border border-white/8 bg-[#06080d]"
+          >
+            <img
+              src={dashboardPreview}
+              alt="Anteprima della dashboard DeltaHedge"
+              className="h-auto w-full object-cover"
+            />
           </div>
+        </div>
+      </section>
+
+      <section className="mx-auto max-w-7xl px-4 py-20 md:px-8">
+        <div className="mb-10 max-w-3xl">
+          <p className="mb-3 text-xs uppercase tracking-[0.3em] text-zinc-500">
+            Cosa facciamo davvero
+          </p>
+          <h2 className="text-3xl font-semibold tracking-tight text-white md:text-5xl">
+            Aiutiamo una challenge prop e un broker a muoversi insieme, così il ciclo ha una logica più stabile e più controllata.
+          </h2>
+          <p className="mt-5 text-lg leading-8 text-zinc-400">
+            Non ti stiamo vendendo una pagina piena di numeri. Ti stiamo dando un modo
+            semplice per gestire due conti che fanno due lavori diversi ma camminano insieme.
+          </p>
         </div>
 
         <div className="grid gap-5 lg:grid-cols-3">
@@ -152,15 +211,15 @@ export default function LandingPage() {
       </section>
 
       <section
-        id="how-it-works"
-        className="mx-auto grid max-w-7xl gap-10 px-4 py-20 md:px-8 lg:grid-cols-[1.15fr_0.85fr]"
+        id="come-funziona"
+        className="mx-auto grid max-w-7xl gap-10 px-4 py-20 md:px-8 lg:grid-cols-[1.08fr_0.92fr]"
       >
         <div className="rounded-[32px] border border-white/10 bg-white/[0.03] p-8 backdrop-blur-xl">
           <p className="mb-3 text-xs uppercase tracking-[0.3em] text-zinc-500">
-            Workflow
+            Come funziona
           </p>
           <h2 className="mb-8 text-3xl font-semibold tracking-tight text-white md:text-4xl">
-            Dall’onboarding al monitoraggio, ogni passaggio riduce attrito operativo.
+            La spiegazione semplice è questa.
           </h2>
           <div className="space-y-5">
             {steps.map((step) => (
@@ -180,66 +239,75 @@ export default function LandingPage() {
 
         <div className="rounded-[32px] border border-white/10 bg-gradient-to-b from-white/[0.06] to-white/[0.02] p-8 backdrop-blur-xl">
           <p className="mb-3 text-xs uppercase tracking-[0.3em] text-zinc-500">
-            Observability
+            In parole povere
           </p>
           <h2 className="mb-8 text-2xl font-semibold tracking-tight text-white">
-            La dashboard mostra quello che serve, senza rumore da template crypto.
+            Non puntiamo a “indovinare” soltanto il mercato. Puntiamo a far lavorare bene la coppia.
           </h2>
 
-          <div className="mb-8 rounded-[28px] border border-white/10 bg-[#06080d] p-5 shadow-[0_24px_80px_rgba(0,0,0,0.35)]">
-            <div className="mb-4 flex items-center justify-between">
-              <div>
-                <p className="text-xs uppercase tracking-[0.24em] text-zinc-500">
-                  Slot attivo
-                </p>
-                <p className="mt-2 text-2xl font-semibold text-white">FundingPips 100K</p>
-              </div>
-              <div className="rounded-full border border-emerald-400/20 bg-emerald-400/10 px-3 py-1 text-xs font-medium text-emerald-300">
-                Connected
-              </div>
-            </div>
-            <div className="grid gap-3 sm:grid-cols-2">
-              <div className="rounded-2xl border border-white/8 bg-white/[0.03] p-4">
-                <p className="text-xs uppercase tracking-[0.2em] text-zinc-500">
-                  Equity Prop
-                </p>
-                <p className="mt-3 text-2xl font-semibold text-white">$101,284</p>
-              </div>
-              <div className="rounded-2xl border border-white/8 bg-white/[0.03] p-4">
-                <p className="text-xs uppercase tracking-[0.2em] text-zinc-500">
-                  Unrealized PnL Broker
-                </p>
-                <p className="mt-3 text-2xl font-semibold text-white">$412</p>
-              </div>
-            </div>
-          </div>
-
           <div className="space-y-3">
-            {observability.map((item) => (
+            {outcomes.map((item) => (
               <div
                 key={item}
                 className="flex items-start gap-3 rounded-2xl border border-white/8 bg-black/20 px-4 py-3"
               >
-                <Eye className="mt-0.5 size-4 shrink-0 text-white" />
+                <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-white" />
                 <p className="text-sm leading-6 text-zinc-300">{item}</p>
               </div>
             ))}
           </div>
+
+          <div className="mt-8 rounded-[24px] border border-white/10 bg-[#06080d] p-5">
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="rounded-2xl border border-white/8 bg-white/[0.03] p-4">
+                <p className="text-xs uppercase tracking-[0.2em] text-zinc-500">
+                  Tu cosa vedi
+                </p>
+                <p className="mt-3 text-base leading-7 text-white">
+                  Se la coppia è pronta, se è accesa e se i due conti stanno facendo il loro lavoro.
+                </p>
+              </div>
+              <div className="rounded-2xl border border-white/8 bg-white/[0.03] p-4">
+                <p className="text-xs uppercase tracking-[0.2em] text-zinc-500">
+                  Perché è utile
+                </p>
+                <p className="mt-3 text-base leading-7 text-white">
+                  Perché non devi più interpretare da solo dieci schermate diverse per capire se il ciclo sta andando bene.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="mx-auto max-w-7xl px-4 py-20 md:px-8">
+        <div className="mb-10 max-w-3xl">
+          <p className="mb-3 text-xs uppercase tracking-[0.3em] text-zinc-500">
+            Perché piace
+          </p>
+          <h2 className="text-3xl font-semibold tracking-tight text-white md:text-4xl">
+            Meno attrito, meno caos, più chiarezza.
+          </h2>
+        </div>
+
+        <div className="grid gap-5 lg:grid-cols-3">
+          {proofPoints.map((feature) => (
+            <SectionCard key={feature.title} {...feature} />
+          ))}
         </div>
       </section>
 
       <section className="mx-auto max-w-7xl px-4 py-20 md:px-8">
         <div className="rounded-[36px] border border-white/10 bg-white/[0.04] p-8 text-center backdrop-blur-xl md:p-12">
           <p className="mb-3 text-xs uppercase tracking-[0.3em] text-zinc-500">
-            Ready
+            Inizia da qui
           </p>
           <h2 className="mx-auto max-w-3xl text-3xl font-semibold tracking-tight text-white md:text-5xl">
-            Se vuoi un runtime cloud per challenge prop + broker, qui parte il flusso.
+            Se vuoi far lavorare challenge e broker insieme in modo semplice, qui parte tutto.
           </h2>
           <p className="mx-auto mt-5 max-w-2xl text-lg leading-8 text-zinc-400">
-            Crea l’account, collega i due lati dello slot e lascia DeltaHedge
-            lavorare in background. L’utente finale torna solo per leggere dashboard,
-            trade e performance.
+            Crei l’account, colleghi la coppia e poi lasci DeltaHedge seguire il lavoro.
+            Tu torni solo quando vuoi controllare la dashboard e vedere come sta andando.
           </p>
           <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
             <Button
@@ -248,7 +316,7 @@ export default function LandingPage() {
               className="rounded-2xl border border-white/10 bg-white px-7 text-black hover:bg-white/90"
               onClick={() => navigate("/login")}
             >
-              Entra in piattaforma
+              Entra in DeltaHedge
               <ArrowRight className="ml-2 size-4" />
             </Button>
             <Button
@@ -256,9 +324,9 @@ export default function LandingPage() {
               size="lg"
               variant="ghost"
               className="rounded-2xl border border-white/10 bg-white/[0.04] px-7 text-white hover:bg-white/[0.08]"
-              onClick={() => navigate("/login")}
+              onClick={() => navigate("/app")}
             >
-              Crea il tuo account
+              Guarda la dashboard
             </Button>
           </div>
         </div>
