@@ -2,7 +2,7 @@ import * as React from "react";
 import { ArrowRight, ChevronRight, Menu, X } from "lucide-react";
 import { Link } from "react-router-dom";
 
-import dashboardPreview from "../../dashboard-minimal-overview.png";
+import dashboardPreview from "../../Screenshot 2026-03-26 alle 18.14.53.png";
 import { BackgroundPaths } from "@/components/ui/background-paths";
 import { buttonVariants } from "@/components/ui/button";
 import { AnimatedGroup } from "@/components/motion-primitives/animated-group";
