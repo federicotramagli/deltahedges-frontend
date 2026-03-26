@@ -4,6 +4,7 @@ import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import App from "./App";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { AuthProvider } from "./contexts/AuthContext";
+import LandingPage from "./pages/LandingPage";
 import LoginPage from "./pages/LoginPage";
 import "./index.css";
 
@@ -12,9 +13,10 @@ ReactDOM.createRoot(document.getElementById("root")).render(
     <BrowserRouter>
       <AuthProvider>
         <Routes>
+          <Route path="/" element={<LandingPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route
-            path="/"
+            path="/app"
             element={
               <ProtectedRoute>
                 <App />

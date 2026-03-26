@@ -108,7 +108,7 @@ export function AuthPage({
         </div>
 
         <a
-          href="#"
+          href="/"
           className="absolute top-7 left-5 inline-flex items-center rounded-md px-3 py-2 text-sm text-zinc-400 transition hover:bg-white/[0.04] hover:text-white"
         >
           <ChevronLeftIcon className="me-2 size-4" />

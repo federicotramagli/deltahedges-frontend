@@ -23,7 +23,7 @@ export default function LoginPage() {
   }, [email, password, firstName, lastName, username, country, phone, isRegistering]);
 
   if (!loading && user) {
-    return <Navigate to="/" replace />;
+    return <Navigate to="/app" replace />;
   }
 
   async function handleLogin() {
