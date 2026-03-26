@@ -263,32 +263,34 @@ export function HeroSection() {
           </div>
         </section>
 
-        <section className="bg-background pb-16 pt-16 md:pb-32">
-          <div className="group relative m-auto max-w-5xl px-6">
-            <div className="absolute inset-0 z-10 flex scale-95 items-center justify-center opacity-0 duration-500 group-hover:scale-100 group-hover:opacity-100">
-              <a href="#perche-deltahedge" className="block text-sm duration-150 hover:opacity-75">
-                <span>Vedi l'infrastruttura che usiamo</span>
-                <ChevronRight className="ml-1 inline-block size-3" />
-              </a>
+        <section className="bg-background pb-16 pt-14 md:pb-28">
+          <div className="m-auto max-w-6xl px-6">
+            <div className="mx-auto max-w-2xl text-center">
+              <p className="text-sm uppercase tracking-[0.32em] text-zinc-500">
+                Infrastruttura cloud e strumenti su cui si appoggia DeltaHedge
+              </p>
             </div>
 
-            <div className="mx-auto text-center">
-              <h2 className="text-lg font-medium text-zinc-200">
-                DeltaHedge lavora con una infrastruttura cloud gia affidabile.
-              </h2>
-            </div>
-
-            <div className="mx-auto mt-20 grid max-w-4xl grid-cols-2 gap-x-12 gap-y-8 transition-all duration-500 group-hover:opacity-50 md:grid-cols-4 md:gap-x-16 md:gap-y-12 group-hover:blur-[2px]">
-              {partnerLogos.map((logo) => (
-                <div key={logo.name} className="flex items-center justify-center">
-                  <img
-                    className={cn("w-auto object-contain", logo.className)}
-                    src={logo.src}
-                    alt={`${logo.name} Logo`}
-                    loading="lazy"
-                  />
-                </div>
-              ))}
+            <div className="relative mt-12 overflow-hidden [mask-image:linear-gradient(to_right,transparent,black_16%,black_84%,transparent)]">
+              <motion.div
+                className="flex w-max items-center gap-14 md:gap-16"
+                animate={{ x: ["0%", "-50%"] }}
+                transition={{ duration: 30, repeat: Infinity, ease: "linear" }}
+              >
+                {[...partnerLogos, ...partnerLogos].map((logo, index) => (
+                  <div
+                    key={`${logo.name}-${index}`}
+                    className="flex h-9 items-center justify-center opacity-75 transition-opacity duration-300 hover:opacity-100"
+                  >
+                    <img
+                      className={cn("w-auto object-contain", logo.className)}
+                      src={logo.src}
+                      alt={`${logo.name} Logo`}
+                      loading="lazy"
+                    />
+                  </div>
+                ))}
+              </motion.div>
             </div>
           </div>
         </section>
