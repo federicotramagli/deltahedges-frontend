@@ -1,6 +1,7 @@
 import * as React from "react";
 import { ArrowRight, ChevronRight, Menu, X } from "lucide-react";
 import { Link } from "react-router-dom";
+import { motion } from "framer-motion";
 
 import dashboardPreview from "../../Screenshot 2026-03-26 alle 18.14.53.png";
 import { BackgroundPaths } from "@/components/ui/background-paths";
@@ -15,15 +16,17 @@ const menuItems = [
   { name: "Dashboard", href: "/app", internal: true },
 ];
 
-const stackItems = [
+const brandItems = [
   "FundingPips",
+  "FTMO",
+  "FundedNext",
+  "The5ers",
+  "FunderPro",
   "MetaApi",
-  "Railway",
   "Supabase",
+  "Railway",
   "Cloudflare",
   "Vercel",
-  "BullMQ",
-  "Stripe",
 ];
 
 const transitionVariants = {
@@ -305,21 +308,41 @@ export function HeroSection() {
         </section>
 
         <section className="bg-background pb-16 pt-16 md:pb-32">
-          <div className="group relative m-auto max-w-5xl px-6">
-            <div className="absolute inset-0 z-10 flex scale-95 items-center justify-center opacity-0 duration-500 group-hover:scale-100 group-hover:opacity-100">
-              <a href="#come-funziona" className="block text-sm duration-150 hover:opacity-75">
+          <div className="relative m-auto max-w-6xl px-6">
+            <div className="mx-auto max-w-2xl text-center">
+              <p className="text-sm uppercase tracking-[0.35em] text-zinc-500">
+                Infrastruttura e brand con cui il flusso si appoggia
+              </p>
+            </div>
+
+            <div className="relative mt-10 overflow-hidden [mask-image:linear-gradient(to_right,transparent,black_18%,black_82%,transparent)]">
+              <motion.div
+                className="flex w-max items-center gap-4"
+                animate={{ x: ["0%", "-50%"] }}
+                transition={{
+                  duration: 26,
+                  repeat: Infinity,
+                  ease: "linear",
+                }}
+              >
+                {[...brandItems, ...brandItems].map((item, index) => (
+                  <div
+                    key={`${item}-${index}`}
+                    className="flex h-14 min-w-[11rem] items-center justify-center rounded-2xl border border-white/10 bg-white/[0.03] px-6 backdrop-blur-sm"
+                  >
+                    <span className="text-sm font-medium tracking-[0.28em] text-zinc-300 uppercase">
+                      {item}
+                    </span>
+                  </div>
+                ))}
+              </motion.div>
+            </div>
+
+            <div className="mt-8 text-center">
+              <a href="#come-funziona" className="inline-flex items-center text-sm text-zinc-400 duration-150 hover:text-white">
                 <span>Vedi come lavora DeltaHedge</span>
                 <ChevronRight className="ml-1 inline-block size-3" />
               </a>
-            </div>
-            <div className="mx-auto mt-12 grid max-w-3xl grid-cols-2 gap-x-10 gap-y-8 transition-all duration-500 group-hover:opacity-50 sm:grid-cols-4 sm:gap-x-16 sm:gap-y-14">
-              {stackItems.map((item) => (
-                <div key={item} className="flex items-center justify-center">
-                  <span className="text-sm font-medium tracking-[0.28em] text-zinc-500 uppercase">
-                    {item}
-                  </span>
-                </div>
-              ))}
             </div>
           </div>
         </section>
