@@ -300,6 +300,10 @@ async function fetchSavedAccountsPayload() {
   return payload.accounts || [];
 }
 
+async function fetchStripePlansPayload() {
+  return apiRequest("/stripe/plans");
+}
+
 function readLocalDashboardState() {
   if (typeof window === "undefined") return null;
 
@@ -318,6 +322,15 @@ function formatCurrency(value) {
     currency: "USD",
     maximumFractionDigits: 0,
   }).format(value);
+}
+
+function formatPreciseUsd(value) {
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+    minimumFractionDigits: Number.isInteger(Number(value || 0)) ? 0 : 2,
+    maximumFractionDigits: 2,
+  }).format(Number(value || 0));
 }
 
 function formatSignedCurrency(value) {
@@ -1833,6 +1846,11 @@ function App() {
   const [savedAccountDraft, setSavedAccountDraft] = useState(null);
   const [profileDraft, setProfileDraft] = useState(null);
   const [planDraft, setPlanDraft] = useState(initialSubscription);
+  const [stripePlans, setStripePlans] = useState([]);
+  const [stripePlansConfigured, setStripePlansConfigured] = useState(false);
+  const [stripePlansLoading, setStripePlansLoading] = useState(false);
+  const [stripePlansError, setStripePlansError] = useState(null);
+  const [billingCheckoutPlanId, setBillingCheckoutPlanId] = useState(null);
   const [exportDraft, setExportDraft] = useState({
     scope: "ultimi_30_giorni",
     includeEvents: true,
@@ -1956,10 +1974,7 @@ function App() {
       !subscription.canManageAccounts &&
       Number(subscription.availableSlots || 0) <= 0
     ) {
-      pushNotification(
-        "Conti bloccati",
-        "Puoi collegare nuovi conti solo se hai almeno uno slot pagato e disponibile.",
-      );
+      void openBillingOffersPanel();
       return;
     }
     setSavedAccountDraft(createEmptySavedAccountDraft(accountType));
@@ -2576,12 +2591,55 @@ function App() {
     setSlotWizardError(null);
   }
 
+  async function openBillingOffersPanel() {
+    try {
+      setStripePlansLoading(true);
+      setStripePlansError(null);
+      const payload = await fetchStripePlansPayload();
+      setStripePlans(payload.plans || []);
+      setStripePlansConfigured(Boolean(payload.configured));
+      openPanel("billing-offers");
+    } catch (error) {
+      console.error("[DeltaHedge] Unable to load Stripe plans", error);
+      setStripePlansError(
+        error instanceof Error
+          ? error.message
+          : "Impossibile caricare i pacchetti Stripe.",
+      );
+      openPanel("billing-offers");
+    } finally {
+      setStripePlansLoading(false);
+    }
+  }
+
+  async function startStripeCheckout(planId) {
+    try {
+      setBillingCheckoutPlanId(planId);
+      const payload = await apiRequest("/stripe/create-checkout-session", {
+        method: "POST",
+        body: JSON.stringify({ planId }),
+      });
+
+      if (!payload?.url) {
+        throw new Error("Stripe non ha restituito un URL di checkout.");
+      }
+
+      window.location.assign(payload.url);
+    } catch (error) {
+      console.error("[DeltaHedge] Unable to start Stripe checkout", error);
+      setStripePlansError(
+        error instanceof Error
+          ? error.message
+          : "Impossibile aprire il checkout Stripe.",
+      );
+    } finally {
+      setBillingCheckoutPlanId(null);
+    }
+  }
+
   function openAddSlot() {
     if (!isDashboardAdmin && !(Number(subscription.availableSlots || 0) > 0)) {
-      pushNotification(
-        "Nessuno slot disponibile",
-        "Ti serve almeno uno slot pagato e libero prima di creare una nuova coppia.",
-      );
+      void openBillingOffersPanel();
       return;
     }
     setSlotDraft(createEmptySlot(slots.length + 1, "", slots));
@@ -5376,6 +5434,103 @@ function App() {
       );
     }
 
+    if (panel.type === "billing-offers") {
+      return (
+        <Drawer
+          title="Sblocca i tuoi slot"
+          description="Per creare nuove coppie ti serve un abbonamento attivo. Scegli il pacchetto mensile piu adatto e continua su Stripe."
+          onClose={closePanel}
+          maxWidthClass="max-w-[980px]"
+        >
+          <div className="space-y-5">
+            <div className="rounded-[16px] border border-primary/10 bg-primary/5 px-4 py-4 text-sm text-zinc-300">
+              Con ogni pacchetto sblocchi slot reali nel tuo account. Se il pagamento fallisce o l'abbonamento viene cancellato,
+              gli slot vengono revocati e le connessioni MetaApi collegate vengono smontate in automatico.
+            </div>
+
+            {stripePlansError ? (
+              <div className="rounded-[14px] border border-rose-500/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-100">
+                {stripePlansError}
+              </div>
+            ) : null}
+
+            {!stripePlansConfigured ? (
+              <div className="rounded-[16px] border border-amber-500/15 bg-amber-500/10 px-4 py-4 text-sm text-amber-100">
+                Stripe non e ancora configurato in produzione. La struttura checkout e pronta, ma serve collegare le price API key e i webhook.
+              </div>
+            ) : null}
+
+            {stripePlansLoading ? (
+              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                {Array.from({ length: 4 }).map((_, index) => (
+                  <div
+                    key={`plan-skeleton-${index}`}
+                    className="h-[240px] animate-pulse rounded-[22px] border border-white/8 bg-white/[0.03]"
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                {stripePlans.map((plan) => (
+                  <div
+                    key={plan.id}
+                    className={`brand-surface-soft rounded-[22px] border px-5 py-5 ${
+                      plan.seatCount === 3
+                        ? "border-primary/30 shadow-[0_0_0_1px_rgba(123,137,255,0.12),0_24px_80px_rgba(92,97,255,0.16)]"
+                        : "border-white/8"
+                    }`}
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <div className="text-[11px] uppercase tracking-[0.16em] text-zinc-500">
+                          {plan.isTest ? "Test" : `${plan.seatCount} slot`}
+                        </div>
+                        <div className="mt-2 text-2xl font-semibold text-white">{plan.name}</div>
+                        <div className="mt-2 text-sm leading-6 text-zinc-400">{plan.description}</div>
+                      </div>
+                      {plan.seatCount === 3 ? (
+                        <Badge className="border-primary/20 bg-primary/10 text-primary hover:bg-primary/10">
+                          Popolare
+                        </Badge>
+                      ) : null}
+                    </div>
+
+                    <div className="mt-6">
+                      <div className="text-4xl font-semibold tracking-tight text-white">
+                        {formatPreciseUsd(plan.monthlyAmountUsd)}
+                      </div>
+                      <div className="mt-1 text-sm text-zinc-500">
+                        / mese · {formatPreciseUsd(plan.monthlyPerSlotUsd)} per slot
+                      </div>
+                    </div>
+
+                    <div className="mt-6 space-y-2 text-sm text-zinc-300">
+                      <div>• {plan.seatCount} slot cloud riservati al tuo utente</div>
+                      <div>• Uso di conti salvati e wizard coppie sbloccato</div>
+                      <div>• Revoca automatica se il billing si interrompe</div>
+                    </div>
+
+                    <Button
+                      type="button"
+                      className={`mt-6 w-full ${primaryButtonClass}`}
+                      disabled={!plan.configured || billingCheckoutPlanId === plan.id}
+                      onClick={() => void startStripeCheckout(plan.id)}
+                    >
+                      {billingCheckoutPlanId === plan.id
+                        ? "Reindirizzamento..."
+                        : plan.configured
+                          ? "Continua con Stripe"
+                          : "Non configurato"}
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </Drawer>
+      );
+    }
+
     if (panel.type === "notifications") {
       return (
         <Drawer
@@ -5761,7 +5916,6 @@ function App() {
                 <Button
                   size="icon"
                   className={`size-11 ${primaryButtonClass}`}
-                  disabled={isAccountsLibrary && !subscription.canManageAccounts && !isDashboardAdmin}
                   onClick={() =>
                     isAccountsLibrary ? openSavedAccountPanel("PROP") : openAddSlot()
                   }
@@ -6149,7 +6303,6 @@ function App() {
                           type="button"
                           variant="outline"
                           className={secondaryButtonClass}
-                          disabled={!subscription.canManageAccounts && !isDashboardAdmin}
                           onClick={() => openSavedAccountPanel("PROP")}
                         >
                           Nuovo prop
@@ -6157,7 +6310,6 @@ function App() {
                         <Button
                           type="button"
                           className={primaryButtonClass}
-                          disabled={!subscription.canManageAccounts && !isDashboardAdmin}
                           onClick={() => openSavedAccountPanel("BROKER")}
                         >
                           Nuovo broker
@@ -6181,7 +6333,6 @@ function App() {
                             type="button"
                             variant="outline"
                             className={secondaryButtonClass}
-                            disabled={!subscription.canManageAccounts && !isDashboardAdmin}
                             onClick={() => openSavedAccountPanel("PROP")}
                           >
                             Salva conto prop
@@ -6189,7 +6340,6 @@ function App() {
                           <Button
                             type="button"
                             className={primaryButtonClass}
-                            disabled={!subscription.canManageAccounts && !isDashboardAdmin}
                             onClick={() => openSavedAccountPanel("BROKER")}
                           >
                             Salva conto broker
