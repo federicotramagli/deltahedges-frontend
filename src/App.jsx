@@ -384,7 +384,18 @@ function nowHourMinute() {
   });
 }
 
-function nextSlotName(index) {
+function nextSlotName(existingSlots = [], startIndex = 1) {
+  const taken = new Set(
+    existingSlots
+      .map((slot) => slot?.slot?.trim().toLowerCase())
+      .filter(Boolean),
+  );
+
+  let index = Math.max(1, startIndex);
+  while (taken.has(`slot ${String(index).padStart(2, "0")}`.toLowerCase())) {
+    index += 1;
+  }
+
   return `Slot ${String(index).padStart(2, "0")}`;
 }
 
@@ -537,10 +548,10 @@ function EquityCurveChart({ points }) {
   );
 }
 
-function createEmptySlot(index, profileName) {
+function createEmptySlot(index, profileName, existingSlots = []) {
   return {
     id: `cyc_slot_${Date.now()}`,
-    slot: nextSlotName(index),
+    slot: nextSlotName(existingSlots, index),
     phase: "Fase 1",
     challenge: "FundingPips 100K",
     brokerAccount: "",
@@ -1550,6 +1561,7 @@ function Drawer({
   saveLabel,
   saveDisabled = false,
   savePendingLabel = null,
+  footerHint = null,
   maxWidthClass = "max-w-[760px]",
 }) {
   return (
@@ -1588,7 +1600,7 @@ function Drawer({
 
         <div className="flex-1 overflow-y-auto px-6 py-5">{children}</div>
 
-        <div className="flex items-center justify-between border-t border-border/80 px-6 py-5">
+        <div className="flex items-center justify-between gap-4 border-t border-border/80 px-6 py-5">
           <Button
             type="button"
             variant="outline"
@@ -1597,6 +1609,11 @@ function Drawer({
           >
             Annulla
           </Button>
+          {footerHint ? (
+            <div className="flex-1 text-right text-xs text-muted-foreground">{footerHint}</div>
+          ) : (
+            <div className="flex-1" />
+          )}
           {onSave ? (
             <Button
               type="button"
@@ -1672,6 +1689,16 @@ function App() {
   function openSavedAccountPanel(accountType = "PROP") {
     setSavedAccountDraft(createEmptySavedAccountDraft(accountType));
     openPanel("saved-account");
+  }
+
+  function getSavedAccountMissingFields(draft) {
+    if (!draft) return [];
+    const missing = [];
+    if (!draft.label.trim()) missing.push("etichetta");
+    if (!draft.login.trim()) missing.push("login");
+    if (!draft.password.trim()) missing.push("password");
+    if (!draft.server.trim()) missing.push("server");
+    return missing;
   }
 
   function saveSavedAccountLocally() {
@@ -2211,7 +2238,7 @@ function App() {
   }
 
   function openAddSlot() {
-    setSlotDraft(createEmptySlot(slots.length + 1, ""));
+    setSlotDraft(createEmptySlot(slots.length + 1, "", slots));
     openPanel("add-slot");
   }
 
@@ -3405,6 +3432,7 @@ function App() {
     }
 
     if (panel.type === "saved-account" && savedAccountDraft) {
+      const missingFields = getSavedAccountMissingFields(savedAccountDraft);
       return (
         <Drawer
           title="Salva conto"
@@ -3412,6 +3440,12 @@ function App() {
           onClose={closePanel}
           onSave={saveSavedAccount}
           saveLabel="Salva conto"
+          saveDisabled={missingFields.length > 0}
+          footerHint={
+            missingFields.length > 0
+              ? `Completa prima: ${missingFields.join(", ")}.`
+              : "Il conto verra salvato nel backend e riutilizzato negli slot."
+          }
           maxWidthClass="max-w-[720px]"
         >
           <div className="space-y-5">
