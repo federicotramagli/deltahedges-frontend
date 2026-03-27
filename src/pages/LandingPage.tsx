@@ -1,4 +1,5 @@
 import * as React from "react";
+import { motion } from "framer-motion";
 import {
   Activity,
   ArrowRight,
@@ -21,29 +22,29 @@ import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 const stats = [
-  { value: "2 conti", label: "Una challenge e un broker che lavorano insieme" },
-  { value: "Zero VPS", label: "Tutto gira nel cloud, non sul tuo computer" },
-  { value: "1 dashboard", label: "Vedi stato, progressi e risultati in un solo posto" },
+  { value: "2 conti", label: "Una challenge e un broker che lavorano come una coppia" },
+  { value: "Zero VPS", label: "Il Trading Matematico gira nel cloud, non sul tuo computer" },
+  { value: "1 dashboard", label: "Controlli stato, fase ed equity da un solo posto" },
 ];
 
 const serviceCards = [
   {
     icon: Workflow,
-    title: "Colleghi due conti una sola volta",
+    title: "Mirroring",
     body:
-      "Inserisci i dati della challenge e del broker. DeltaHedge prepara la coppia e la tiene ordinata dentro la piattaforma.",
+      "La challenge e il broker vengono messi nella stessa logica operativa. Non lavori più con due conti separati, ma con una sola struttura.",
   },
   {
     icon: Bot,
-    title: "Il lavoro continua anche se esci",
+    title: "Drawdown",
     body:
-      "Puoi chiudere il browser. La coppia resta operativa nel cloud e tu torni dentro quando vuoi per controllare cosa sta succedendo.",
+      "Il ciclo nasce per ridurre la dipendenza dalla sola direzione del mercato e dare più ordine al percorso della challenge.",
   },
   {
     icon: ChartNoAxesCombined,
-    title: "Capisci tutto senza interpretare grafici strani",
+    title: "Cloud",
     body:
-      "Dentro la dashboard vedi conti, fase, equity e progressi con parole chiare. Sai subito se la coppia è pronta, attiva o da sistemare.",
+      "Colleghi i conti una volta sola e il lavoro continua anche se chiudi il browser. Tu rientri quando vuoi e trovi tutto già allineato.",
   },
 ];
 
@@ -71,21 +72,21 @@ const steps = [
 const reasons = [
   {
     icon: ShieldCheck,
-    title: "Meno dipendenza da una sola direzione",
+    title: "Non lasciare tutto al mercato che sale o scende",
     text:
-      "L'idea di base è semplice: non lasciare tutto al solo salire o scendere del mercato, ma usare due lati che si accompagnano.",
+      "Il punto non è indovinare sempre la direzione. Il punto è usare una struttura che accompagna la challenge con un secondo lato di supporto.",
   },
   {
     icon: Clock3,
-    title: "Meno attrito operativo",
+    title: "Smetti di inseguire finestre, login e passaggi sparsi",
     text:
-      "Niente installazioni complicate, niente gestione manuale di più schermate. Hai una piattaforma che ti accompagna passo dopo passo.",
+      "Con DeltaHedge non devi ricostruire ogni volta il processo da zero. La coppia è dentro una dashboard unica, chiara e continua.",
   },
   {
     icon: Activity,
-    title: "Più chiarezza durante il ciclo",
+    title: "Trasforma un processo fragile in un flusso leggibile",
     text:
-      "Sai cosa preparare, cosa succede dopo e quando la coppia è pronta. Il prodotto ti spiega il lavoro in modo semplice.",
+      "Sai quando la coppia è pronta, quando è attiva e come sta andando. Meno interpretazione, più lettura semplice di quello che conta.",
   },
 ];
 
@@ -109,6 +110,30 @@ const testimonials = [
     role: "Prop trader",
   },
 ];
+
+const revealUp = {
+  hidden: {
+    opacity: 0,
+    y: 24,
+  },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      duration: 0.7,
+      ease: "easeOut",
+    },
+  },
+};
+
+const staggerReveal = {
+  hidden: {},
+  visible: {
+    transition: {
+      staggerChildren: 0.12,
+    },
+  },
+};
 
 export default function LandingPage() {
   const [email, setEmail] = React.useState("");
@@ -150,21 +175,27 @@ export default function LandingPage() {
 
       <section id="perche-deltahedge" className="relative z-10 px-6 py-20 md:py-28">
         <div className="mx-auto grid max-w-6xl gap-14 lg:grid-cols-[0.92fr_1.08fr]">
-          <div className="space-y-6">
+          <motion.div
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, amount: 0.3 }}
+            variants={revealUp}
+            className="space-y-6"
+          >
             <span className="brand-pill inline-flex items-center rounded-full px-4 py-1 text-xs uppercase tracking-[0.35em] text-zinc-300">
               Cosa fa DeltaHedge
             </span>
             <h2 className="text-balance text-4xl font-semibold tracking-tight text-white md:text-5xl">
-              Una piattaforma che dà struttura a un processo che di solito è sparso, manuale e pieno di attrito.
+              DeltaHedge organizza challenge e broker dentro una logica più matematica, ordinata e leggibile.
             </h2>
             <p className="max-w-xl text-lg leading-8 text-zinc-400">
-              In parole povere: crei una coppia tra challenge e broker. Da lì in poi hai un posto unico dove vedere conti, stato, avanzamento e risultati, con meno frizione e più controllo.
+              In parole povere: invece di lasciare tutto a un solo lato del mercato, crei una coppia tra challenge e broker. Da lì in poi hai un sistema che accompagna il ciclo e te lo fa leggere in modo semplice.
             </p>
             <div className="space-y-3 pt-2">
               {[
-                "Colleghi i dati dei conti una sola volta",
-                "Vedi subito se la coppia è pronta, attiva o da completare",
-                "Controlli equity, progressi e risultati da una dashboard semplice",
+                "Colleghi i conti una sola volta e la coppia resta pronta nel cloud",
+                "Vedi subito se il ciclo è pronto, attivo o da completare",
+                "Controlli equity, progressi e risultati con una dashboard leggibile",
               ].map((item) => (
                 <div key={item} className="flex items-start gap-3 text-sm text-zinc-300">
                   <BadgeCheck className="mt-0.5 h-4 w-4 shrink-0 text-white" />
@@ -172,11 +203,18 @@ export default function LandingPage() {
                 </div>
               ))}
             </div>
-          </div>
+          </motion.div>
 
-          <div className="grid gap-4">
+          <motion.div
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, amount: 0.3 }}
+            variants={staggerReveal}
+            className="grid gap-4"
+          >
               {serviceCards.map((card) => (
-                <Card
+                <motion.div key={card.title} variants={revealUp}>
+                  <Card
                   key={card.title}
                   className="brand-surface rounded-[28px] py-0 text-white shadow-none"
                 >
@@ -190,30 +228,44 @@ export default function LandingPage() {
                   {card.body}
                 </CardContent>
               </Card>
-            ))}
-          </div>
+                </motion.div>
+              ))}
+          </motion.div>
         </div>
       </section>
 
       <section id="come-funziona" className="relative z-10 px-6 py-20 md:py-28">
         <div className="mx-auto max-w-6xl">
-          <div className="mx-auto max-w-3xl text-center">
+          <motion.div
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, amount: 0.3 }}
+            variants={revealUp}
+            className="mx-auto max-w-3xl text-center"
+          >
             <span className="brand-pill inline-flex items-center rounded-full px-4 py-1 text-xs uppercase tracking-[0.35em] text-zinc-300">
               Come funziona
             </span>
             <h2 className="mt-5 text-balance text-4xl font-semibold tracking-tight text-white md:text-5xl">
-              Meno passaggi sparsi. Più continuità.
+              Un modo più matematico per lavorare sulla challenge.
             </h2>
             <p className="mt-5 text-lg leading-8 text-zinc-400">
-              Non devi capire tutto in un colpo solo. DeltaHedge ti accompagna un passaggio
-              alla volta e ti mostra sempre cosa fare dopo.
+              Non ti chiediamo di diventare più tecnico. Ti diamo una struttura più chiara:
+              una challenge, un broker e una dashboard che ti fa capire dove sei.
             </p>
-          </div>
+          </motion.div>
 
-          <div className="mt-14 grid gap-5 lg:grid-cols-3">
+          <motion.div
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, amount: 0.3 }}
+            variants={staggerReveal}
+            className="mt-14 grid gap-5 lg:grid-cols-3"
+          >
             {steps.map((step) => (
-              <div
+              <motion.div
                 key={step.number}
+                variants={revealUp}
                 className="brand-surface-soft rounded-[28px] p-6"
               >
                 <div className="flex items-center justify-between">
@@ -224,17 +276,42 @@ export default function LandingPage() {
                 </div>
                 <h3 className="mt-8 text-xl font-medium text-white">{step.title}</h3>
                 <p className="mt-4 text-sm leading-7 text-zinc-400">{step.text}</p>
-              </div>
+              </motion.div>
             ))}
-          </div>
+          </motion.div>
         </div>
       </section>
 
       <section className="relative z-10 px-6 py-20 md:py-28">
-        <div className="mx-auto grid max-w-6xl gap-5 lg:grid-cols-3">
+        <motion.div
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, amount: 0.3 }}
+          variants={revealUp}
+          className="mx-auto max-w-3xl pb-12 text-center md:pb-14"
+        >
+          <span className="brand-pill inline-flex items-center rounded-full px-4 py-1 text-xs uppercase tracking-[0.35em] text-zinc-300">
+            Smetti di essere una vittima
+          </span>
+          <h2 className="mt-5 text-balance text-4xl font-semibold tracking-tight text-white md:text-5xl">
+            Non costruire tutto su una sola direzione del mercato.
+          </h2>
+          <p className="mt-5 text-lg leading-8 text-zinc-400">
+            DeltaHedge nasce per dare una struttura più solida al percorso. Non promette magia:
+            toglie attrito, dà ordine e rende il ciclo più leggibile.
+          </p>
+        </motion.div>
+        <motion.div
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, amount: 0.3 }}
+          variants={staggerReveal}
+          className="mx-auto grid max-w-6xl gap-5 lg:grid-cols-3"
+        >
           {reasons.map((reason) => (
-            <div
+            <motion.div
               key={reason.title}
+              variants={revealUp}
               className="brand-surface rounded-[28px] p-6"
             >
               <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-white/10 bg-[linear-gradient(135deg,rgba(123,137,255,0.18),rgba(45,212,191,0.12))]">
@@ -242,25 +319,38 @@ export default function LandingPage() {
               </div>
               <h3 className="mt-6 text-xl font-medium text-white">{reason.title}</h3>
               <p className="mt-4 text-sm leading-7 text-zinc-400">{reason.text}</p>
-            </div>
+            </motion.div>
           ))}
-        </div>
+        </motion.div>
       </section>
 
       <section className="relative z-10 px-6 py-20 md:py-28">
         <div className="mx-auto max-w-6xl">
-          <div className="mx-auto max-w-3xl text-center">
+          <motion.div
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, amount: 0.3 }}
+            variants={revealUp}
+            className="mx-auto max-w-3xl text-center"
+          >
             <span className="brand-pill inline-flex items-center rounded-full px-4 py-1 text-xs uppercase tracking-[0.35em] text-zinc-300">
               Testimonianze
             </span>
             <h2 className="mt-5 text-balance text-4xl font-semibold tracking-tight text-white md:text-5xl">
-              Le persone non cercano un software pieno di pulsanti. Cercano chiarezza.
+              Chi prova il Trading Matematico non cerca rumore. Cerca una struttura che abbia senso.
             </h2>
-          </div>
+          </motion.div>
 
-          <div className="mt-14 grid gap-5 lg:grid-cols-3">
+          <motion.div
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, amount: 0.3 }}
+            variants={staggerReveal}
+            className="mt-14 grid gap-5 lg:grid-cols-3"
+          >
             {testimonials.map((testimonial) => (
-              <Card
+              <motion.div key={testimonial.name} variants={revealUp}>
+                <Card
                 key={testimonial.name}
                 className="brand-surface-soft rounded-[28px] py-0 text-white shadow-none"
               >
@@ -275,29 +365,36 @@ export default function LandingPage() {
                   </div>
                 </CardContent>
               </Card>
+              </motion.div>
             ))}
-          </div>
+          </motion.div>
         </div>
       </section>
 
       <PricingSection
         className="relative"
         plans={DELTAHEDGE_PLANS}
-        heading="Scegli quanti slot vuoi far lavorare"
-        description="Parti gratis con 1 trade di prova. Quando vuoi andare live, scegli quanti slot attivare ogni mese oppure passa al piano annuale."
+        heading="Scegli il livello del tuo Trading Matematico"
+        description="Parti gratis con 1 trade di prova. Quando vuoi lavorare in modo serio sulla challenge, scegli quanti slot attivare ogni mese o all'anno."
       />
 
       <section className="relative z-10 px-6 pb-24 pt-10 md:pb-32">
-        <div className="brand-surface mx-auto max-w-5xl rounded-[2rem] p-8 md:p-12">
+        <motion.div
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, amount: 0.3 }}
+          variants={revealUp}
+          className="brand-surface mx-auto max-w-5xl rounded-[2rem] p-8 md:p-12"
+        >
           <div className="mx-auto max-w-3xl text-center">
             <span className="brand-pill inline-flex items-center rounded-full px-4 py-1 text-xs uppercase tracking-[0.35em] text-zinc-300">
               Newsletter privata
             </span>
             <h2 className="mt-5 text-balance text-4xl font-semibold tracking-tight text-white md:text-5xl">
-              Vuoi seguire l’evoluzione del prodotto prima degli altri?
+              Vuoi vedere come evolve DeltaHedge prima degli altri?
             </h2>
             <p className="mt-5 text-lg leading-8 text-zinc-400">
-              Ti aggiorniamo solo quando c’è qualcosa che cambia davvero l’esperienza: nuove funzioni, nuovi slot disponibili e miglioramenti operativi.
+              Ti scriviamo solo quando c'è qualcosa di davvero utile: nuove funzioni, nuovi slot disponibili e miglioramenti che rendono il ciclo più chiaro.
             </p>
           </div>
 
@@ -312,15 +409,20 @@ export default function LandingPage() {
               placeholder="Scrivi la tua email"
               className="h-12 rounded-2xl border-white/10 bg-[#0a1020]/80 px-4 text-white placeholder:text-zinc-500 focus-visible:ring-primary/20"
             />
-            <button
+            <motion.button
               type="submit"
+              whileHover={{
+                scale: 1.03,
+                boxShadow: "0 22px 48px rgba(83,102,255,0.24)",
+              }}
+              whileTap={{ scale: 0.98 }}
               className={cn(
                 buttonVariants({ size: "lg" }),
                 "h-12 rounded-2xl bg-[linear-gradient(135deg,#f8fbff_0%,#d9e0ff_55%,#9be7ff_100%)] px-6 text-[#06101d] hover:brightness-105",
               )}
             >
               Ricevi aggiornamenti
-            </button>
+            </motion.button>
           </form>
 
           <div className="mt-4 text-center text-sm text-zinc-500">
@@ -334,16 +436,29 @@ export default function LandingPage() {
           </div>
 
           <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
-            <Link
-              to="/login"
-              className={cn(
-                buttonVariants({ size: "lg" }),
-                "rounded-2xl bg-[linear-gradient(135deg,#f8fbff_0%,#d9e0ff_55%,#9be7ff_100%)] px-6 text-[#06101d] hover:brightness-105",
-              )}
+            <motion.div
+              whileHover={{
+                scale: 1.03,
+                boxShadow: "0 22px 48px rgba(83,102,255,0.24)",
+              }}
+              whileTap={{ scale: 0.98 }}
             >
-              Entra nella dashboard
-            </Link>
-            <a
+              <Link
+                to="/login"
+                className={cn(
+                  buttonVariants({ size: "lg" }),
+                  "rounded-2xl bg-[linear-gradient(135deg,#f8fbff_0%,#d9e0ff_55%,#9be7ff_100%)] px-6 text-[#06101d] hover:brightness-105",
+                )}
+              >
+                Entra nella dashboard
+              </Link>
+            </motion.div>
+            <motion.a
+              whileHover={{
+                scale: 1.03,
+                boxShadow: "0 22px 48px rgba(14,20,32,0.4)",
+              }}
+              whileTap={{ scale: 0.98 }}
               href="#come-funziona"
               className={cn(
                 buttonVariants({ variant: "ghost", size: "lg" }),
@@ -352,9 +467,9 @@ export default function LandingPage() {
             >
               Leggi come funziona
               <ArrowRight className="ml-2 h-4 w-4" />
-            </a>
+            </motion.a>
           </div>
-        </div>
+        </motion.div>
       </section>
     </div>
   );

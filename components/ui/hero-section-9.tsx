@@ -1,10 +1,9 @@
 import * as React from "react";
 import { ArrowRight, ChevronRight, Menu, X } from "lucide-react";
 import { Link } from "react-router-dom";
-import { motion } from "framer-motion";
+import { motion, useAnimation } from "framer-motion";
 
 import dashboardPreview from "../../Screenshot 2026-03-27 alle 11.14.07.png";
-import { AnimatedGroup } from "@/components/motion-primitives/animated-group";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -14,23 +13,25 @@ const menuItems = [
   { name: "About", href: "#perche-deltahedge" },
 ];
 
-const transitionVariants = {
-  item: {
-    hidden: {
-      opacity: 0,
-      filter: "blur(12px)",
-      y: 12,
-    },
-    visible: {
-      opacity: 1,
-      filter: "blur(0px)",
-      y: 0,
-      transition: {
-        type: "spring",
-        bounce: 0.3,
-        duration: 1.5,
-      },
-    },
+const fadeUp = {
+  hidden: {
+    opacity: 0,
+    y: 20,
+  },
+  visible: {
+    opacity: 1,
+    y: 0,
+  },
+};
+
+const imageReveal = {
+  hidden: {
+    opacity: 0,
+    scale: 0.95,
+  },
+  visible: {
+    opacity: 1,
+    scale: 1,
   },
 };
 
@@ -126,6 +127,12 @@ function FloatingPaths({
 }
 
 export function HeroSection() {
+  const heroControls = useAnimation();
+
+  React.useEffect(() => {
+    heroControls.start("visible");
+  }, [heroControls]);
+
   return (
     <div className="brand-shell relative overflow-hidden text-white">
       <div className="absolute inset-0 -z-30">
@@ -154,87 +161,98 @@ export function HeroSection() {
             />
             <div className="mx-auto max-w-7xl px-6">
               <div className="text-center sm:mx-auto lg:mr-auto lg:mt-0">
-                <AnimatedGroup variants={transitionVariants}>
-                  <a
-                    href="#perche-deltahedge"
-                    className="brand-pill group mx-auto flex w-fit items-center gap-4 rounded-full p-1 pl-4 shadow-md shadow-black/5 transition-all duration-300 hover:bg-[#0c1017] dark:shadow-zinc-950"
-                  >
-                    <span className="text-foreground text-sm">DeltaHedge Cloud</span>
-                    <span className="block h-4 w-0.5 border-l border-white/10 bg-white dark:bg-zinc-700" />
+                <motion.a
+                  initial="hidden"
+                  animate={heroControls}
+                  variants={fadeUp}
+                  transition={{ duration: 0.7, ease: "easeOut" }}
+                  href="#perche-deltahedge"
+                  className="brand-pill group mx-auto flex w-fit items-center gap-4 rounded-full p-1 pl-4 shadow-md shadow-black/5 transition-all duration-300 hover:bg-[#0c1017] dark:shadow-zinc-950"
+                >
+                  <span className="text-foreground text-sm">Trading Matematico</span>
+                  <span className="block h-4 w-0.5 border-l border-white/10 bg-white dark:bg-zinc-700" />
 
-                    <div className="size-6 overflow-hidden rounded-full bg-[linear-gradient(135deg,#f8fbff,#c9d4ff)] text-[#07101f] duration-500 group-hover:brightness-105">
-                      <div className="flex w-12 -translate-x-1/2 duration-500 ease-in-out group-hover:translate-x-0">
-                        <span className="flex size-6">
-                          <ArrowRight className="m-auto size-3" />
-                        </span>
-                        <span className="flex size-6">
-                          <ArrowRight className="m-auto size-3" />
-                        </span>
-                      </div>
+                  <div className="size-6 overflow-hidden rounded-full bg-[linear-gradient(135deg,#f8fbff,#c9d4ff)] text-[#07101f] duration-500 group-hover:brightness-105">
+                    <div className="flex w-12 -translate-x-1/2 duration-500 ease-in-out group-hover:translate-x-0">
+                      <span className="flex size-6">
+                        <ArrowRight className="m-auto size-3" />
+                      </span>
+                      <span className="flex size-6">
+                        <ArrowRight className="m-auto size-3" />
+                      </span>
                     </div>
-                  </a>
+                  </div>
+                </motion.a>
 
-                  <h1 className="mx-auto mt-8 max-w-4xl text-balance text-6xl font-semibold tracking-[-0.06em] md:text-7xl lg:mt-16 xl:text-[5.25rem]">
-                    Dai struttura al tuo ciclo. <span className="brand-gradient-text">Togli attrito.</span>
-                  </h1>
-                  <p className="mx-auto mt-8 max-w-2xl text-balance text-lg text-zinc-400">
-                    Colleghi challenge e broker una sola volta, segui lo stato della coppia da una dashboard chiara e lasci DeltaHedge lavorare nel cloud quando tu esci.
-                  </p>
-                </AnimatedGroup>
+                <motion.h1
+                  initial="hidden"
+                  animate={heroControls}
+                  variants={fadeUp}
+                  transition={{ duration: 0.8, ease: "easeOut", delay: 0 }}
+                  className="mx-auto mt-8 max-w-4xl text-balance text-6xl font-semibold tracking-[-0.06em] md:text-7xl lg:mt-16 xl:text-[5.25rem]"
+                >
+                  Il modo matematico per far lavorare <span className="brand-gradient-text">challenge e broker</span> insieme.
+                </motion.h1>
+                <motion.p
+                  initial="hidden"
+                  animate={heroControls}
+                  variants={fadeUp}
+                  transition={{ duration: 0.8, ease: "easeOut", delay: 0.2 }}
+                  className="mx-auto mt-8 max-w-2xl text-balance text-lg text-zinc-400"
+                >
+                  DeltaHedge crea una coppia tra prop e broker per ridurre la dipendenza dalla sola direzione del mercato. Tu colleghi i conti, noi diamo struttura, continuità e controllo.
+                </motion.p>
 
-                <AnimatedGroup
-                  variants={{
-                    container: {
-                      visible: {
-                        transition: {
-                          staggerChildren: 0.05,
-                          delayChildren: 0.75,
-                        },
-                      },
-                    },
-                    ...transitionVariants,
-                  }}
+                <motion.div
+                  initial="hidden"
+                  animate={heroControls}
+                  variants={fadeUp}
+                  transition={{ duration: 0.8, ease: "easeOut", delay: 0.4 }}
                   className="mt-12 flex flex-col items-center justify-center gap-2 md:flex-row"
                 >
-                    <div key={1} className="rounded-[16px] border border-white/10 bg-[linear-gradient(135deg,rgba(255,255,255,0.16),rgba(123,137,255,0.16))] p-0.5 shadow-[0_18px_44px_rgba(83,102,255,0.16)]">
-                      <Link
-                        to="/login"
-                        className={cn(
-                          buttonVariants({ size: "lg" }),
-                          "rounded-[14px] bg-[linear-gradient(135deg,#f8fbff_0%,#d9e0ff_55%,#9be7ff_100%)] px-5 text-base text-[#06101d] hover:brightness-105"
-                        )}
-                      >
-                        <span className="text-nowrap">Start Building</span>
-                      </Link>
-                  </div>
-                  <a
-                    key={2}
-                    href="#dashboard-preview"
-                      className={cn(
-                        buttonVariants({ variant: "ghost", size: "lg" }),
-                        "h-10.5 rounded-[14px] border border-white/10 bg-[linear-gradient(180deg,rgba(16,22,38,0.78),rgba(10,14,26,0.92))] px-5 text-white hover:bg-white/5"
-                      )}
+                  <motion.div
+                    whileHover={{
+                      scale: 1.03,
+                      boxShadow: "0 24px 56px rgba(83,102,255,0.24)",
+                    }}
+                    whileTap={{ scale: 0.98 }}
+                    className="rounded-[16px] border border-white/10 bg-[linear-gradient(135deg,rgba(255,255,255,0.16),rgba(123,137,255,0.16))] p-0.5 shadow-[0_18px_44px_rgba(83,102,255,0.16)]"
                   >
-                    <span className="text-nowrap">Request a demo</span>
-                  </a>
-                </AnimatedGroup>
+                    <Link
+                      to="/login"
+                      className={cn(
+                        buttonVariants({ size: "lg" }),
+                        "rounded-[14px] bg-[linear-gradient(135deg,#f8fbff_0%,#d9e0ff_55%,#9be7ff_100%)] px-5 text-base text-[#06101d] hover:brightness-105"
+                      )}
+                    >
+                      <span className="text-nowrap">Attiva il tuo Trading Matematico</span>
+                    </Link>
+                  </motion.div>
+                  <motion.a
+                    whileHover={{
+                      scale: 1.03,
+                      boxShadow: "0 24px 56px rgba(14,20,32,0.4)",
+                    }}
+                    whileTap={{ scale: 0.98 }}
+                    href="#dashboard-preview"
+                    className={cn(
+                      buttonVariants({ variant: "ghost", size: "lg" }),
+                      "h-10.5 rounded-[14px] border border-white/10 bg-[linear-gradient(180deg,rgba(16,22,38,0.78),rgba(10,14,26,0.92))] px-5 text-white hover:bg-white/5"
+                    )}
+                  >
+                    <span className="text-nowrap">Passa la tua Challenge</span>
+                  </motion.a>
+                </motion.div>
               </div>
             </div>
 
-            <AnimatedGroup
-              variants={{
-                container: {
-                  visible: {
-                    transition: {
-                      staggerChildren: 0.05,
-                      delayChildren: 0.75,
-                    },
-                  },
-                },
-                ...transitionVariants,
-              }}
+            <motion.div
+              initial="hidden"
+              animate={heroControls}
+              variants={imageReveal}
+              transition={{ duration: 1, ease: "easeOut", delay: 0.6 }}
+              className="relative -mr-56 mt-8 overflow-hidden px-2 sm:mr-0 sm:mt-12 md:mt-20"
             >
-              <div className="relative -mr-56 mt-8 overflow-hidden px-2 sm:mr-0 sm:mt-12 md:mt-20">
                 <div
                   aria-hidden
                   className="absolute inset-0 z-10 bg-gradient-to-b from-transparent from-35% to-[#05070b]"
@@ -260,8 +278,7 @@ export function HeroSection() {
                     />
                   </div>
                 </div>
-              </div>
-            </AnimatedGroup>
+            </motion.div>
           </div>
         </section>
 

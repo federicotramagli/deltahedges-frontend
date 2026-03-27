@@ -16,6 +16,31 @@ type Frequency = "monthly" | "yearly";
 
 const frequencies: Frequency[] = ["monthly", "yearly"];
 
+const pricingGridVariants = {
+  hidden: {},
+  visible: {
+    transition: {
+      staggerChildren: 0.14,
+    },
+  },
+};
+
+const pricingCardVariants = {
+  hidden: {
+    opacity: 0,
+    y: 24,
+  },
+  visible: (highlighted: boolean) => ({
+    opacity: 1,
+    y: 0,
+    scale: highlighted ? 1.03 : 1,
+    transition: {
+      duration: highlighted ? 0.8 : 0.65,
+      ease: "easeOut",
+    },
+  }),
+};
+
 export interface Plan {
   name: string;
   info: string;
@@ -73,11 +98,17 @@ export function PricingSection({
           setFrequency={setFrequency}
         />
 
-        <div className="grid w-full gap-5 lg:grid-cols-3">
+        <motion.div
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, amount: 0.3 }}
+          variants={pricingGridVariants}
+          className="grid w-full gap-5 lg:grid-cols-3"
+        >
           {plans.map((plan) => (
             <PricingCard key={plan.name} plan={plan} frequency={frequency} />
           ))}
-        </div>
+        </motion.div>
       </div>
     </section>
   );
@@ -158,7 +189,9 @@ function PricingCard({
     plan.price[frequency] === 0 ? "Gratis" : `$${plan.price[frequency]}`;
 
   return (
-    <div
+    <motion.div
+      custom={Boolean(plan.highlighted)}
+      variants={pricingCardVariants}
       className={cn(
         "brand-surface relative flex min-h-[31rem] flex-col overflow-hidden rounded-3xl",
         plan.highlighted && "shadow-[0_32px_90px_rgba(83,102,255,0.18),inset_0_1px_0_rgba(255,255,255,0.04)]",
@@ -245,7 +278,7 @@ function PricingCard({
           </a>
         )}
       </div>
-    </div>
+    </motion.div>
   );
 }
 
@@ -297,7 +330,7 @@ function BorderTrail({
 export const DELTAHEDGE_PLANS: Plan[] = [
   {
     name: "Free",
-    info: "Per vedere come funziona con un solo trade di prova.",
+    info: "Per provare il flusso con 1 trade matematico di test.",
     price: {
       monthly: 0,
       yearly: 0,
@@ -305,21 +338,21 @@ export const DELTAHEDGE_PLANS: Plan[] = [
     features: [
       { text: "1 trade test" },
       { text: "Accesso alla dashboard" },
-      { text: "Colleghi una coppia per fare una prova" },
+      { text: "Colleghi una coppia challenge + broker" },
       {
         text: "Nessun abbonamento",
-        tooltip: "Serve solo per provare il flusso iniziale e vedere la piattaforma in azione.",
+        tooltip: "Ti serve per vedere la logica del prodotto in azione senza iniziare subito con un piano live.",
       },
     ],
     btn: {
-      text: "Prova gratis",
+      text: "Prova 1 trade gratis",
       href: "/login",
       internal: true,
     },
   },
   {
-    name: "1 Slot",
-    info: "Per iniziare con una coppia live senza complicazioni.",
+    name: "Challenge Pass",
+    info: "1 slot per chi vuole affrontare la challenge con una struttura più matematica.",
     price: {
       monthly: 149,
       yearly: 1490,
@@ -327,23 +360,24 @@ export const DELTAHEDGE_PLANS: Plan[] = [
     highlighted: true,
     features: [
       { text: "1 slot attivo" },
-      { text: "Collegamento challenge + broker" },
+      { text: "Mirroring challenge + broker" },
       { text: "Dashboard live con equity e PnL" },
       { text: "Libreria conti salvati" },
+      { text: "Trading Matematico nel cloud" },
       {
         text: "Supporto prioritario",
-        tooltip: "Accesso più rapido all'assistenza per setup e primi controlli.",
+        tooltip: "Hai un supporto più rapido quando devi configurare la coppia o verificare i primi passaggi.",
       },
     ],
     btn: {
-      text: "Inizia con 1 slot",
+      text: "Passa la tua Challenge",
       href: "/login",
       internal: true,
     },
   },
   {
     name: "3 Slot",
-    info: "Per chi vuole far girare più coppie nello stesso account.",
+    info: "Per chi vuole più cicli attivi con la stessa logica e una vista centrale unica.",
     price: {
       monthly: 429,
       yearly: 4290,
@@ -353,13 +387,14 @@ export const DELTAHEDGE_PLANS: Plan[] = [
       { text: "Monitoraggio centrale di tutte le coppie" },
       { text: "Cronologia e performance per ciclo" },
       { text: "Connessioni cloud sempre disponibili" },
+      { text: "Più spazio per scalare il tuo setup" },
       {
         text: "Più spazio operativo",
-        tooltip: "Pensato per chi vuole lavorare su più setup senza uscire dalla stessa dashboard.",
+        tooltip: "Pensato per chi vuole lavorare su più coppie senza perdere ordine, controllo e visibilità.",
       },
     ],
     btn: {
-      text: "Passa a 3 slot",
+      text: "Attiva 3 slot",
       href: "/login",
       internal: true,
     },
