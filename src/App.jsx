@@ -241,7 +241,7 @@ const primaryButtonClass =
 const secondaryButtonClass =
   "rounded-md border border-white/8 bg-white/[0.03] text-foreground hover:bg-white/[0.06]";
 
-const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
+const apiBaseUrl = import.meta.env.VITE_API_BASE_URL?.replace(/\/+$/, "");
 const localStateStorageKey = "deltahedge.local-dashboard-state.v1";
 
 if (!apiBaseUrl) {
