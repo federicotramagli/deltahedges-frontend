@@ -295,6 +295,11 @@ async function apiRequest(path, options = {}) {
   return payload;
 }
 
+async function fetchSavedAccountsPayload() {
+  const payload = await apiRequest("/accounts-library");
+  return payload.accounts || [];
+}
+
 function readLocalDashboardState() {
   if (typeof window === "undefined") return null;
 
@@ -2307,7 +2312,9 @@ function App() {
     const [slotsPayload, performancePayload, accountsPayload] = await Promise.all([
       apiRequest("/slots"),
       apiRequest("/performance").catch(() => ({ cycleLogs: [] })),
-      apiRequest("/accounts-library").catch(() => ({ accounts: [] })),
+      fetchSavedAccountsPayload()
+        .then((accounts) => ({ accounts }))
+        .catch(() => ({ accounts: [] })),
     ]);
 
     const nextAccounts = accountsPayload.accounts || [];
@@ -2376,7 +2383,8 @@ function App() {
 
     const refreshPendingAccounts = async () => {
       try {
-        await loadDashboardData(selectedSlotId);
+        const nextAccounts = await fetchSavedAccountsPayload();
+        setSavedAccounts(nextAccounts);
       } catch (error) {
         if (!cancelled) {
           console.error("[DeltaHedge] Unable to refresh pending saved accounts", error);
