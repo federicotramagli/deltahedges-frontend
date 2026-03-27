@@ -2649,6 +2649,7 @@ function App() {
     const brokerAccount = savedAccounts.find(
       (item) => item.id === slotDraft.brokerSavedAccountId,
     );
+    const brokerStartEquity = getWizardBrokerStartEquity(slotDraft, brokerAccount);
 
     if (!propAccount || !brokerAccount) {
       pushNotification(
@@ -2724,6 +2725,7 @@ function App() {
             slotDraft.phase === "Fase 1"
               ? Number(slotDraft.hedgeBaseTarget || 1000)
               : Number(slotDraft.hedgeBaseTarget || slotDraft.target || 1000),
+          brokerStartEquity: Number(brokerStartEquity || 0),
           riskPerTrade,
           maxDailyTrades,
           orphanTimeoutMs,
@@ -3306,6 +3308,7 @@ function App() {
             workingSlot.phase === "Fase 1"
               ? Number(workingSlot.hedgeBaseTarget || 1000)
               : Number(workingSlot.hedgeBaseTarget || workingSlot.target || 1000),
+          brokerStartEquity: Number(workingSlot.brokerStartEquity || 0),
           riskPerTrade: updatedProfile.riskPerTrade,
           maxDailyTrades: updatedProfile.maxDailyTrades,
           orphanTimeoutMs: updatedProfile.orphanTimeoutMs,
