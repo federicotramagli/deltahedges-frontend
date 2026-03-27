@@ -1109,6 +1109,33 @@ function getBrokerProjections(slot) {
   };
 }
 
+function getDynamicCycleBalance(slot) {
+  const fallback = Number(slot?.cycleBalance || 0);
+  const unrealizedPnl = slot?.propUnrealizedPnl;
+
+  if (unrealizedPnl === null || unrealizedPnl === undefined || Number.isNaN(Number(unrealizedPnl))) {
+    return fallback;
+  }
+
+  const passTarget = Math.max(getEffectiveCycleTarget(slot), 1);
+  const failThreshold = Math.max(getPropMaxLoss(slot?.challenge), 1);
+  const currentPnl = Number(unrealizedPnl);
+
+  if (currentPnl >= 0) {
+    return Math.round(Math.max(0, Math.min(100, (currentPnl / passTarget) * 100)));
+  }
+
+  return Math.round(Math.min(0, Math.max(-100, (currentPnl / failThreshold) * 100)));
+}
+
+function getCycleBalanceLabel(slot) {
+  const cycleBalance = getDynamicCycleBalance(slot);
+
+  if (cycleBalance === 0) return "Centro";
+  if (cycleBalance > 0) return `+${cycleBalance}% verso pass`;
+  return `${cycleBalance}% verso fail`;
+}
+
 function buildCycleProjection(slot) {
   const brokerInitialEquity = Number(slot?.brokerStartEquity || 0);
   const phase1BaseTarget = Number(slot?.hedgeBaseTarget || slot?.target || 0);
@@ -3895,18 +3922,19 @@ function App() {
     }
 
     if (panel.type === "activate-slot" && slotDraft) {
+      const liveSlot = slots.find((item) => item.id === slotDraft.id) ?? slotDraft;
       const activationChecklist = [
         {
           label: "Challenge collegata",
-          done: hasPropConnection(slotDraft),
+          done: hasPropConnection(liveSlot),
         },
         {
           label: "Broker collegato",
-          done: hasBrokerConnection(slotDraft),
+          done: hasBrokerConnection(liveSlot),
         },
         {
           label: "Parametri applicati",
-          done: hasStrategyParameters(slotDraft),
+          done: hasStrategyParameters(liveSlot),
         },
       ];
 
@@ -3924,10 +3952,10 @@ function App() {
                 Challenge
               </div>
               <div className="mt-1 text-lg font-semibold text-white">
-                {slotDraft.challenge}
+                {liveSlot.challenge}
               </div>
               <div className="mt-1 text-sm text-zinc-500">
-                Broker collegato: {slotDraft.brokerAccount || "Non collegato"}
+                Broker collegato: {liveSlot.brokerAccount || "Non collegato"}
               </div>
               <div className="mt-3 flex flex-wrap gap-2">
                 {activationChecklist.map((item) => (
@@ -3963,26 +3991,17 @@ function App() {
               </Field>
               <Field label="Stato MetaApi">
                 <div className="flex h-11 items-center rounded-lg border border-white/10 bg-[#0d1120] px-3 text-sm text-zinc-300">
-                  {getMetaApiReadiness(slotDraft).label}
+                  {getMetaApiReadiness(liveSlot).label}
                 </div>
               </Field>
             </div>
-            <Field label="Posizione ciclo" hint="-100 fail · 0 start · +100 pass">
-              <input
-                className={inputClass}
-                type="range"
-                min="-100"
-                max="100"
-                value={slotDraft.cycleBalance}
-                onChange={(event) =>
-                  setSlotDraft((current) => ({
-                    ...current,
-                    cycleBalance: Number(event.target.value),
-                  }))
-                }
-              />
+            <Field label="Posizione ciclo" hint="Calcolata live dal PnL non realizzato del conto prop">
+              <div className="flex h-11 items-center justify-between rounded-lg border border-white/10 bg-[#0d1120] px-3 text-sm">
+                <span className="text-zinc-400">Stato attuale</span>
+                <span className="font-medium text-zinc-200">{getCycleBalanceLabel(liveSlot)}</span>
+              </div>
             </Field>
-            <CycleBalanceBar value={slotDraft.cycleBalance} />
+            <CycleBalanceBar value={getDynamicCycleBalance(liveSlot)} />
             <Button
               type="button"
               variant="outline"
@@ -4267,15 +4286,11 @@ function App() {
                       </div>
                     </div>
                     <div className="text-sm font-medium text-zinc-300">
-                      {slotDraft.cycleBalance === 0
-                        ? "Centro"
-                        : slotDraft.cycleBalance > 0
-                          ? `+${slotDraft.cycleBalance}% verso pass`
-                          : `${slotDraft.cycleBalance}% verso fail`}
+                      {getCycleBalanceLabel(slotDraft)}
                     </div>
                   </div>
                   <div className="mt-4">
-                    <CycleBalanceBar value={slotDraft.cycleBalance} />
+                    <CycleBalanceBar value={getDynamicCycleBalance(slotDraft)} />
                   </div>
                 </div>
 
@@ -5764,7 +5779,7 @@ function App() {
 
                             <div className="mt-3">
                               <CycleBalanceBar
-                                value={slot.cycleBalance}
+                                value={getDynamicCycleBalance(slot)}
                                 leftValue={projection.failGain}
                                 rightValue={projection.passLoss}
                                 compact
