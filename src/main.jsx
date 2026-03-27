@@ -5,6 +5,8 @@ import { BrowserRouter, Navigate, Route, Routes, useLocation } from "react-route
 import App from "./App";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { AuthProvider } from "./contexts/AuthContext";
+import BillingCancelPage from "./pages/BillingCancelPage";
+import BillingSuccessPage from "./pages/BillingSuccessPage";
 import LandingPage from "./pages/LandingPage";
 import LoginPage from "./pages/LoginPage";
 import "./index.css";
@@ -17,8 +19,11 @@ function AppRoutes() {
       <Routes location={location} key={location.pathname}>
         <Route path="/" element={<LandingPage />} />
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/billing/success" element={<BillingSuccessPage />} />
+        <Route path="/billing/cancel" element={<BillingCancelPage />} />
+        <Route path="/app" element={<Navigate to="/dashboard" replace />} />
         <Route
-          path="/app"
+          path="/dashboard"
           element={
             <ProtectedRoute>
               <App />
