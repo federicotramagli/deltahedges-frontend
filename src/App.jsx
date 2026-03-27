@@ -1876,6 +1876,9 @@ function App() {
       await apiRequest(`/accounts-library/${account.id}`, {
         method: "DELETE",
       });
+      setSavedAccounts((current) =>
+        current.filter((item) => item.id !== account.id),
+      );
       await loadDashboardData();
       setSlotDraft((current) => {
         if (!current) return current;
@@ -1919,6 +1922,7 @@ function App() {
       await apiRequest(`/slots/${slot.id}`, {
         method: "DELETE",
       });
+      setSlots((current) => current.filter((item) => item.id !== slot.id));
       await loadDashboardData();
       setSelectedSlotId((current) => (current === slot.id ? null : current));
       if (panel.source === slot.id) {
@@ -1940,7 +1944,11 @@ function App() {
   }
 
   function openSavedAccountPanel(accountType = "PROP") {
-    if (!subscription.canManageAccounts && Number(subscription.availableSlots || 0) <= 0) {
+    if (
+      !isDashboardAdmin &&
+      !subscription.canManageAccounts &&
+      Number(subscription.availableSlots || 0) <= 0
+    ) {
       pushNotification(
         "Conti bloccati",
         "Puoi collegare nuovi conti solo se hai almeno uno slot pagato e disponibile.",
@@ -2511,7 +2519,7 @@ function App() {
   }
 
   function openAddSlot() {
-    if (!(Number(subscription.availableSlots || 0) > 0)) {
+    if (!isDashboardAdmin && !(Number(subscription.availableSlots || 0) > 0)) {
       pushNotification(
         "Nessuno slot disponibile",
         "Ti serve almeno uno slot pagato e libero prima di creare una nuova coppia.",
@@ -5650,7 +5658,7 @@ function App() {
                 <Button
                   size="icon"
                   className={`size-11 ${primaryButtonClass}`}
-                  disabled={isAccountsLibrary && !subscription.canManageAccounts}
+                  disabled={isAccountsLibrary && !subscription.canManageAccounts && !isDashboardAdmin}
                   onClick={() =>
                     isAccountsLibrary ? openSavedAccountPanel("PROP") : openAddSlot()
                   }
@@ -6038,7 +6046,7 @@ function App() {
                           type="button"
                           variant="outline"
                           className={secondaryButtonClass}
-                          disabled={!subscription.canManageAccounts}
+                          disabled={!subscription.canManageAccounts && !isDashboardAdmin}
                           onClick={() => openSavedAccountPanel("PROP")}
                         >
                           Nuovo prop
@@ -6046,7 +6054,7 @@ function App() {
                         <Button
                           type="button"
                           className={primaryButtonClass}
-                          disabled={!subscription.canManageAccounts}
+                          disabled={!subscription.canManageAccounts && !isDashboardAdmin}
                           onClick={() => openSavedAccountPanel("BROKER")}
                         >
                           Nuovo broker
@@ -6070,7 +6078,7 @@ function App() {
                             type="button"
                             variant="outline"
                             className={secondaryButtonClass}
-                            disabled={!subscription.canManageAccounts}
+                            disabled={!subscription.canManageAccounts && !isDashboardAdmin}
                             onClick={() => openSavedAccountPanel("PROP")}
                           >
                             Salva conto prop
@@ -6078,7 +6086,7 @@ function App() {
                           <Button
                             type="button"
                             className={primaryButtonClass}
-                            disabled={!subscription.canManageAccounts}
+                            disabled={!subscription.canManageAccounts && !isDashboardAdmin}
                             onClick={() => openSavedAccountPanel("BROKER")}
                           >
                             Salva conto broker
