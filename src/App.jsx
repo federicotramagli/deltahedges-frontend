@@ -2357,6 +2357,52 @@ function App() {
     });
   }, [authLoading, session, user?.id]);
 
+  const pendingSavedAccountsCount = savedAccounts.filter(
+    (account) => account.connectionState === "pending",
+  ).length;
+
+  useEffect(() => {
+    if (authLoading || !session || !user) return;
+
+    const shouldRefreshPendingAccounts =
+      (activeSection === "Conti" || panel.type === "add-slot") &&
+      pendingSavedAccountsCount > 0;
+
+    if (!shouldRefreshPendingAccounts) {
+      return;
+    }
+
+    let cancelled = false;
+
+    const refreshPendingAccounts = async () => {
+      try {
+        await loadDashboardData(selectedSlotId);
+      } catch (error) {
+        if (!cancelled) {
+          console.error("[DeltaHedge] Unable to refresh pending saved accounts", error);
+        }
+      }
+    };
+
+    void refreshPendingAccounts();
+    const intervalId = window.setInterval(() => {
+      void refreshPendingAccounts();
+    }, 5000);
+
+    return () => {
+      cancelled = true;
+      window.clearInterval(intervalId);
+    };
+  }, [
+    activeSection,
+    authLoading,
+    panel.type,
+    pendingSavedAccountsCount,
+    selectedSlotId,
+    session,
+    user,
+  ]);
+
   const selectedSlot =
     slots.find((slot) => slot.id === selectedSlotId) ?? slots[0] ?? null;
   const filteredSlots = slots.filter((slot) => {
