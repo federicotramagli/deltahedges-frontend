@@ -1827,6 +1827,8 @@ function App() {
   const [openStrategyQuestion, setOpenStrategyQuestion] = useState(0);
   const [slotDraft, setSlotDraft] = useState(null);
   const [slotWizardStep, setSlotWizardStep] = useState(1);
+  const [creatingSlotWizard, setCreatingSlotWizard] = useState(false);
+  const [slotWizardError, setSlotWizardError] = useState(null);
   const [tradeTestDraft, setTradeTestDraft] = useState(null);
   const [savedAccountDraft, setSavedAccountDraft] = useState(null);
   const [profileDraft, setProfileDraft] = useState(null);
@@ -2570,6 +2572,8 @@ function App() {
     setPanel({ type: null, source: null });
     setTradeTestDraft(null);
     setSlotWizardStep(1);
+    setCreatingSlotWizard(false);
+    setSlotWizardError(null);
   }
 
   function openAddSlot() {
@@ -2582,6 +2586,7 @@ function App() {
     }
     setSlotDraft(createEmptySlot(slots.length + 1, "", slots));
     setSlotWizardStep(1);
+    setSlotWizardError(null);
     openPanel("add-slot");
   }
 
@@ -2636,7 +2641,7 @@ function App() {
   }
 
   async function completeSlotWizard() {
-    if (!slotDraft) return;
+    if (!slotDraft || creatingSlotWizard) return;
 
     const propAccount = savedAccounts.find(
       (item) => item.id === slotDraft.propSavedAccountId,
@@ -2660,6 +2665,9 @@ function App() {
       );
       return;
     }
+
+    setCreatingSlotWizard(true);
+    setSlotWizardError(null);
 
     try {
       const createPayload = await apiRequest("/slots", {
@@ -2722,20 +2730,43 @@ function App() {
         }),
       });
 
-      await loadDashboardData(backendSlot.id);
+      let refreshError = null;
+      try {
+        await loadDashboardData(backendSlot.id);
+      } catch (error) {
+        refreshError = error;
+        console.error("[DeltaHedge] slot wizard refresh failed", error);
+      }
+
+      closePanel();
+
+      if (refreshError) {
+        pushNotification(
+          `${slotDraft.slot} creata`,
+          refreshError instanceof Error
+            ? `La coppia e stata creata, ma il refresh della dashboard non e riuscito: ${refreshError.message}`
+            : "La coppia e stata creata, ma il refresh della dashboard non e riuscito.",
+        );
+        return;
+      }
+
       pushNotification(
         `${slotDraft.slot} creato`,
         "La coppia e pronta: conti agganciati e parametri iniziali salvati.",
       );
-      closePanel();
     } catch (error) {
       console.error("[DeltaHedge] slot wizard failed", error);
-      pushNotification(
-        "Errore creazione coppia",
+      const message =
         error instanceof Error
           ? error.message
-          : "Impossibile completare il wizard dello slot.",
+          : "Impossibile completare il wizard dello slot.";
+      setSlotWizardError(message);
+      pushNotification(
+        "Errore creazione coppia",
+        message,
       );
+    } finally {
+      setCreatingSlotWizard(false);
     }
   }
 
@@ -2743,6 +2774,7 @@ function App() {
     if (!slotDraft) return;
 
     if (slotWizardStep === 1) {
+      setSlotWizardError(null);
       if (!slotDraft.slot.trim()) {
         pushNotification("Nome slot mancante", "Dai un nome allo slot prima di continuare.");
         return;
@@ -2752,6 +2784,7 @@ function App() {
     }
 
     if (slotWizardStep === 2) {
+      setSlotWizardError(null);
       const propAccount = savedAccounts.find(
         (item) => item.id === slotDraft.propSavedAccountId,
       );
@@ -2800,6 +2833,7 @@ function App() {
       return;
     }
 
+    setSlotWizardError(null);
     void completeSlotWizard();
   }
 
@@ -3707,6 +3741,8 @@ function App() {
           onAuxAction={slotWizardStep > 1 ? () => setSlotWizardStep((current) => current - 1) : null}
           auxActionLabel={slotWizardStep > 1 ? "Indietro" : null}
           saveLabel={wizardSaveLabel}
+          saveLoading={creatingSlotWizard}
+          savePendingLabel="Creazione in corso..."
           footerHint={wizardFooterHint}
           saveDisabled={
             (slotWizardStep === 2 &&
@@ -3736,6 +3772,16 @@ function App() {
                 </div>
               ))}
             </div>
+
+            {slotWizardError ? (
+              <div className="flex items-start gap-3 rounded-[14px] border border-rose-500/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-100">
+                <CircleAlert className="mt-0.5 size-4 shrink-0 text-rose-300" />
+                <div>
+                  <div className="font-medium text-white">Creazione coppia non riuscita</div>
+                  <div className="mt-1 leading-6 text-rose-100/90">{slotWizardError}</div>
+                </div>
+              </div>
+            ) : null}
 
             <AnimatePresence mode="wait">
               {slotWizardStep === 1 ? (
