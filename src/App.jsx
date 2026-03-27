@@ -2873,9 +2873,13 @@ function App() {
   async function runSlotExecutionTest(slotId, manualTrade = null) {
     const slot = slots.find((item) => item.id === slotId);
     if (!slot) return;
+    let resolvedSlotId = slot.id;
+    let resolvedSlotName = slot.slot;
 
     try {
       const workingSlot = await ensureBackendSlot(slot);
+      resolvedSlotId = workingSlot.id;
+      resolvedSlotName = workingSlot.slot;
 
       console.log("[DeltaHedge] Test button clicked", {
         slotId: workingSlot.id,
@@ -3049,7 +3053,7 @@ function App() {
     } catch (error) {
       setSlots((current) =>
         current.map((item) =>
-          item.id === workingSlot.id
+          item.id === resolvedSlotId
             ? {
                 ...item,
                 testLog: `Errore test: ${
@@ -3064,7 +3068,7 @@ function App() {
       setNotifications((current) => [
         {
           id: `notice_${Date.now()}`,
-          title: `Test fallito · ${slot.slot}`,
+          title: `Test fallito · ${resolvedSlotName}`,
           body:
             error instanceof Error
               ? error.message
@@ -3073,7 +3077,7 @@ function App() {
         ...current,
       ]);
     } finally {
-      setTestingSlotId((current) => (current === slot.id ? null : current));
+      setTestingSlotId((current) => (current === resolvedSlotId ? null : current));
     }
   }
 
