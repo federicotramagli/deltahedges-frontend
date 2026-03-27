@@ -127,12 +127,12 @@ function FloatingPaths({
 
 export function HeroSection() {
   return (
-    <div className="relative overflow-hidden bg-[#05070b] text-white">
+    <div className="brand-shell relative overflow-hidden text-white">
       <div className="absolute inset-0 -z-30">
-        <FloatingPaths position={1} className="text-[#22335f]" />
-        <FloatingPaths position={-1} className="text-[#22335f]" />
+        <FloatingPaths position={1} className="text-[#30479a]" />
+        <FloatingPaths position={-1} className="text-[#243b80]" />
       </div>
-      <div className="absolute inset-0 -z-20 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.08),transparent_24%),radial-gradient(circle_at_bottom_left,rgba(39,61,115,0.22),transparent_28%)]" />
+      <div className="absolute inset-0 -z-20 bg-[radial-gradient(circle_at_top_right,rgba(123,137,255,0.14),transparent_24%),radial-gradient(circle_at_bottom_left,rgba(45,212,191,0.12),transparent_28%),linear-gradient(180deg,rgba(255,255,255,0.02),transparent_32%)]" />
 
       <HeroHeader />
 
@@ -157,12 +157,12 @@ export function HeroSection() {
                 <AnimatedGroup variants={transitionVariants}>
                   <a
                     href="#perche-deltahedge"
-                    className="bg-muted group mx-auto flex w-fit items-center gap-4 rounded-full border border-white/10 bg-white/[0.03] p-1 pl-4 shadow-md shadow-black/5 transition-all duration-300 hover:bg-[#0c1017] dark:shadow-zinc-950"
+                    className="brand-pill group mx-auto flex w-fit items-center gap-4 rounded-full p-1 pl-4 shadow-md shadow-black/5 transition-all duration-300 hover:bg-[#0c1017] dark:shadow-zinc-950"
                   >
                     <span className="text-foreground text-sm">DeltaHedge Cloud</span>
                     <span className="block h-4 w-0.5 border-l border-white/10 bg-white dark:bg-zinc-700" />
 
-                    <div className="bg-background size-6 overflow-hidden rounded-full duration-500 group-hover:bg-white/10">
+                    <div className="size-6 overflow-hidden rounded-full bg-[linear-gradient(135deg,#f8fbff,#c9d4ff)] text-[#07101f] duration-500 group-hover:brightness-105">
                       <div className="flex w-12 -translate-x-1/2 duration-500 ease-in-out group-hover:translate-x-0">
                         <span className="flex size-6">
                           <ArrowRight className="m-auto size-3" />
@@ -174,12 +174,11 @@ export function HeroSection() {
                     </div>
                   </a>
 
-                  <h1 className="mx-auto mt-8 max-w-4xl text-balance text-6xl md:text-7xl lg:mt-16 xl:text-[5.25rem]">
-                    Il modo piu semplice per far lavorare challenge e broker insieme
+                  <h1 className="mx-auto mt-8 max-w-4xl text-balance text-6xl font-semibold tracking-[-0.06em] md:text-7xl lg:mt-16 xl:text-[5.25rem]">
+                    Dai struttura al tuo ciclo. <span className="brand-gradient-text">Togli attrito.</span>
                   </h1>
                   <p className="mx-auto mt-8 max-w-2xl text-balance text-lg text-zinc-400">
-                    Colleghi i due conti una sola volta, segui tutto da una dashboard chiara e
-                    lasci DeltaHedge gestire il lavoro nel cloud anche quando tu chiudi il browser.
+                    Colleghi challenge e broker una sola volta, segui lo stato della coppia da una dashboard chiara e lasci DeltaHedge lavorare nel cloud quando tu esci.
                   </p>
                 </AnimatedGroup>
 
@@ -197,21 +196,24 @@ export function HeroSection() {
                   }}
                   className="mt-12 flex flex-col items-center justify-center gap-2 md:flex-row"
                 >
-                  <div key={1} className="rounded-[14px] border border-white/10 bg-white/10 p-0.5">
-                    <Link
-                      to="/login"
-                      className={cn(buttonVariants({ size: "lg" }), "rounded-xl px-5 text-base")}
-                    >
-                      <span className="text-nowrap">Start Building</span>
-                    </Link>
+                    <div key={1} className="rounded-[16px] border border-white/10 bg-[linear-gradient(135deg,rgba(255,255,255,0.16),rgba(123,137,255,0.16))] p-0.5 shadow-[0_18px_44px_rgba(83,102,255,0.16)]">
+                      <Link
+                        to="/login"
+                        className={cn(
+                          buttonVariants({ size: "lg" }),
+                          "rounded-[14px] bg-[linear-gradient(135deg,#f8fbff_0%,#d9e0ff_55%,#9be7ff_100%)] px-5 text-base text-[#06101d] hover:brightness-105"
+                        )}
+                      >
+                        <span className="text-nowrap">Start Building</span>
+                      </Link>
                   </div>
                   <a
                     key={2}
                     href="#dashboard-preview"
-                    className={cn(
-                      buttonVariants({ variant: "ghost", size: "lg" }),
-                      "h-10.5 rounded-xl px-5 text-white hover:bg-white/5"
-                    )}
+                      className={cn(
+                        buttonVariants({ variant: "ghost", size: "lg" }),
+                        "h-10.5 rounded-[14px] border border-white/10 bg-[linear-gradient(180deg,rgba(16,22,38,0.78),rgba(10,14,26,0.92))] px-5 text-white hover:bg-white/5"
+                      )}
                   >
                     <span className="text-nowrap">Request a demo</span>
                   </a>
@@ -239,7 +241,7 @@ export function HeroSection() {
                 />
                 <div
                   id="dashboard-preview"
-                  className="bg-background ring-background dark:inset-shadow-white/20 relative mx-auto max-w-6xl overflow-hidden rounded-2xl border border-white/10 p-4 shadow-lg shadow-zinc-950/15 ring-1"
+                  className="brand-surface relative mx-auto max-w-6xl overflow-hidden rounded-[30px] p-4 ring-1 ring-white/5"
                 >
                   <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-[#090c12]">
                     <div
@@ -263,7 +265,7 @@ export function HeroSection() {
           </div>
         </section>
 
-        <section className="bg-background pb-16 pt-14 md:pb-28">
+        <section className="bg-transparent pb-16 pt-14 md:pb-28">
           <div className="m-auto max-w-6xl px-6">
             <div className="mx-auto max-w-2xl text-center">
               <p className="text-sm uppercase tracking-[0.32em] text-zinc-500">
@@ -280,7 +282,7 @@ export function HeroSection() {
                 {[...partnerLogos, ...partnerLogos].map((logo, index) => (
                   <div
                     key={`${logo.name}-${index}`}
-                    className="flex h-9 items-center justify-center opacity-75 transition-opacity duration-300 hover:opacity-100"
+                    className="brand-pill flex h-10 items-center justify-center rounded-full px-5 opacity-80 transition-all duration-300 hover:-translate-y-0.5 hover:opacity-100"
                   >
                     <img
                       className={cn("w-auto object-contain", logo.className)}
@@ -315,7 +317,7 @@ function HeroHeader() {
         <div
           className={cn(
             "mx-auto mt-2 max-w-6xl px-6 transition-all duration-300 lg:px-12",
-            isScrolled && "max-w-4xl rounded-2xl border border-white/10 bg-[#090b10]/55 backdrop-blur-lg lg:px-5"
+            isScrolled && "max-w-4xl rounded-2xl border border-white/10 bg-[#0b1020]/70 shadow-[0_18px_60px_rgba(0,0,0,0.28)] backdrop-blur-xl lg:px-5"
           )}
         >
           <div className="relative flex flex-wrap items-center justify-between gap-6 py-3 lg:gap-0 lg:py-4">
@@ -346,7 +348,7 @@ function HeroHeader() {
               </ul>
             </div>
 
-            <div className="bg-background mb-6 hidden w-full flex-wrap items-center justify-end space-y-8 rounded-3xl border border-white/10 p-6 shadow-2xl shadow-zinc-950/20 group-data-[state=active]:block md:flex-nowrap lg:m-0 lg:flex lg:w-fit lg:gap-6 lg:space-y-0 lg:border-transparent lg:bg-transparent lg:p-0 lg:shadow-none dark:shadow-none dark:lg:bg-transparent">
+            <div className="brand-surface-soft mb-6 hidden w-full flex-wrap items-center justify-end space-y-8 rounded-3xl p-6 shadow-2xl shadow-zinc-950/20 group-data-[state=active]:block md:flex-nowrap lg:m-0 lg:flex lg:w-fit lg:gap-6 lg:space-y-0 lg:border-transparent lg:bg-transparent lg:p-0 lg:shadow-none dark:shadow-none dark:lg:bg-transparent">
               <div className="lg:hidden">
                 <ul className="space-y-6 text-base">
                   {menuItems.map((item) => (
@@ -364,7 +366,7 @@ function HeroHeader() {
                   to="/login"
                   className={cn(
                     buttonVariants({ variant: "outline", size: "sm" }),
-                    "border-white/10 bg-transparent text-white hover:bg-white/5",
+                    "border-white/10 bg-[linear-gradient(180deg,rgba(16,22,38,0.78),rgba(10,14,26,0.92))] text-white hover:bg-white/5",
                     isScrolled && "lg:hidden"
                   )}
                 >
@@ -374,7 +376,7 @@ function HeroHeader() {
                   to="/login"
                   className={cn(
                     buttonVariants({ size: "sm" }),
-                    "bg-white text-black hover:bg-white/90",
+                    "bg-[linear-gradient(135deg,#f8fbff_0%,#d9e0ff_55%,#9be7ff_100%)] text-[#06101d] hover:brightness-105",
                     isScrolled && "lg:hidden"
                   )}
                 >
@@ -384,7 +386,7 @@ function HeroHeader() {
                   to="/login"
                   className={cn(
                     buttonVariants({ size: "sm" }),
-                    "hidden bg-white text-black hover:bg-white/90",
+                    "hidden bg-[linear-gradient(135deg,#f8fbff_0%,#d9e0ff_55%,#9be7ff_100%)] text-[#06101d] hover:brightness-105",
                     isScrolled && "lg:inline-flex"
                   )}
                 >
@@ -402,11 +404,11 @@ function HeroHeader() {
 function Logo({ className }: { className?: string }) {
   return (
     <div className={cn("flex items-center gap-3", className)}>
-      <div className="flex size-9 items-center justify-center rounded-xl border border-white/10 bg-white/[0.03] text-sm font-semibold tracking-[0.35em] text-white">
+      <div className="brand-pill flex size-9 items-center justify-center rounded-xl text-sm font-semibold tracking-[0.35em] text-white">
         DH
       </div>
       <div className="flex flex-col">
-        <span className="text-sm font-semibold tracking-[0.35em] text-white">DELTAHEDGE</span>
+        <span className="brand-gradient-text text-sm font-semibold tracking-[0.35em]">DELTAHEDGE</span>
         <span className="text-xs text-zinc-500">Premium Pair Execution</span>
       </div>
     </div>

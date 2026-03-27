@@ -126,7 +126,12 @@ export default function LandingPage() {
   };
 
   return (
-    <div className="bg-[#05070b] text-white">
+    <div className="brand-shell relative overflow-hidden text-white">
+      <div className="pointer-events-none absolute inset-0">
+        <div className="absolute left-[8%] top-[22rem] h-64 w-64 rounded-full bg-[#7b89ff]/10 blur-3xl" />
+        <div className="absolute right-[10%] top-[68rem] h-72 w-72 rounded-full bg-cyan-400/10 blur-3xl" />
+        <div className="absolute bottom-24 left-[18%] h-56 w-56 rounded-full bg-violet-400/10 blur-3xl" />
+      </div>
       <HeroSection />
 
       <section className="relative z-10 px-6 pb-10 md:pb-20">
@@ -134,9 +139,9 @@ export default function LandingPage() {
           {stats.map((stat) => (
             <div
               key={stat.value}
-              className="rounded-3xl border border-white/10 bg-white/[0.03] p-6 backdrop-blur-sm"
+              className="brand-surface-soft rounded-[28px] p-6"
             >
-              <p className="text-3xl font-semibold tracking-tight text-white">{stat.value}</p>
+              <p className="brand-gradient-text text-3xl font-semibold tracking-tight">{stat.value}</p>
               <p className="mt-3 text-sm leading-6 text-zinc-400">{stat.label}</p>
             </div>
           ))}
@@ -146,16 +151,14 @@ export default function LandingPage() {
       <section id="perche-deltahedge" className="relative z-10 px-6 py-20 md:py-28">
         <div className="mx-auto grid max-w-6xl gap-14 lg:grid-cols-[0.92fr_1.08fr]">
           <div className="space-y-6">
-            <span className="inline-flex items-center rounded-full border border-white/10 bg-white/[0.03] px-4 py-1 text-xs uppercase tracking-[0.35em] text-zinc-400">
+            <span className="brand-pill inline-flex items-center rounded-full px-4 py-1 text-xs uppercase tracking-[0.35em] text-zinc-300">
               Cosa fa DeltaHedge
             </span>
             <h2 className="text-balance text-4xl font-semibold tracking-tight text-white md:text-5xl">
-              Un prodotto pensato per togliere confusione, non per aggiungerla.
+              Una piattaforma che dà struttura a un processo che di solito è sparso, manuale e pieno di attrito.
             </h2>
             <p className="max-w-xl text-lg leading-8 text-zinc-400">
-              In parole povere: crei una coppia tra challenge e broker. Da lì in poi hai una
-              piattaforma che ti aiuta a seguirla, capire a che punto è e vedere tutto in
-              modo ordinato.
+              In parole povere: crei una coppia tra challenge e broker. Da lì in poi hai un posto unico dove vedere conti, stato, avanzamento e risultati, con meno frizione e più controllo.
             </p>
             <div className="space-y-3 pt-2">
               {[
@@ -172,14 +175,14 @@ export default function LandingPage() {
           </div>
 
           <div className="grid gap-4">
-            {serviceCards.map((card) => (
-              <Card
-                key={card.title}
-                className="rounded-3xl border-white/10 bg-white/[0.03] py-0 text-white shadow-none backdrop-blur-sm"
-              >
-                <CardHeader className="px-6 pt-6">
-                  <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.04]">
-                    <card.icon className="h-5 w-5 text-white" />
+              {serviceCards.map((card) => (
+                <Card
+                  key={card.title}
+                  className="brand-surface rounded-[28px] py-0 text-white shadow-none"
+                >
+                  <CardHeader className="px-6 pt-6">
+                  <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-2xl border border-white/10 bg-[linear-gradient(135deg,rgba(123,137,255,0.18),rgba(45,212,191,0.12))]">
+                    <card.icon className="h-5 w-5 text-primary" />
                   </div>
                   <CardTitle className="text-xl text-white">{card.title}</CardTitle>
                 </CardHeader>
@@ -195,11 +198,11 @@ export default function LandingPage() {
       <section id="come-funziona" className="relative z-10 px-6 py-20 md:py-28">
         <div className="mx-auto max-w-6xl">
           <div className="mx-auto max-w-3xl text-center">
-            <span className="inline-flex items-center rounded-full border border-white/10 bg-white/[0.03] px-4 py-1 text-xs uppercase tracking-[0.35em] text-zinc-400">
+            <span className="brand-pill inline-flex items-center rounded-full px-4 py-1 text-xs uppercase tracking-[0.35em] text-zinc-300">
               Come funziona
             </span>
             <h2 className="mt-5 text-balance text-4xl font-semibold tracking-tight text-white md:text-5xl">
-              Il percorso deve essere semplice anche per chi entra per la prima volta.
+              Meno passaggi sparsi. Più continuità.
             </h2>
             <p className="mt-5 text-lg leading-8 text-zinc-400">
               Non devi capire tutto in un colpo solo. DeltaHedge ti accompagna un passaggio
@@ -211,7 +214,7 @@ export default function LandingPage() {
             {steps.map((step) => (
               <div
                 key={step.number}
-                className="rounded-3xl border border-white/10 bg-white/[0.03] p-6 backdrop-blur-sm"
+                className="brand-surface-soft rounded-[28px] p-6"
               >
                 <div className="flex items-center justify-between">
                   <span className="text-4xl font-semibold tracking-tight text-white/90">
@@ -232,10 +235,10 @@ export default function LandingPage() {
           {reasons.map((reason) => (
             <div
               key={reason.title}
-              className="rounded-3xl border border-white/10 bg-gradient-to-b from-white/[0.06] to-white/[0.02] p-6 backdrop-blur-sm"
+              className="brand-surface rounded-[28px] p-6"
             >
-              <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.04]">
-                <reason.icon className="h-5 w-5 text-white" />
+              <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-white/10 bg-[linear-gradient(135deg,rgba(123,137,255,0.18),rgba(45,212,191,0.12))]">
+                <reason.icon className="h-5 w-5 text-primary" />
               </div>
               <h3 className="mt-6 text-xl font-medium text-white">{reason.title}</h3>
               <p className="mt-4 text-sm leading-7 text-zinc-400">{reason.text}</p>
@@ -247,7 +250,7 @@ export default function LandingPage() {
       <section className="relative z-10 px-6 py-20 md:py-28">
         <div className="mx-auto max-w-6xl">
           <div className="mx-auto max-w-3xl text-center">
-            <span className="inline-flex items-center rounded-full border border-white/10 bg-white/[0.03] px-4 py-1 text-xs uppercase tracking-[0.35em] text-zinc-400">
+            <span className="brand-pill inline-flex items-center rounded-full px-4 py-1 text-xs uppercase tracking-[0.35em] text-zinc-300">
               Testimonianze
             </span>
             <h2 className="mt-5 text-balance text-4xl font-semibold tracking-tight text-white md:text-5xl">
@@ -259,7 +262,7 @@ export default function LandingPage() {
             {testimonials.map((testimonial) => (
               <Card
                 key={testimonial.name}
-                className="rounded-3xl border-white/10 bg-white/[0.03] py-0 text-white shadow-none backdrop-blur-sm"
+                className="brand-surface-soft rounded-[28px] py-0 text-white shadow-none"
               >
                 <CardHeader className="px-6 pt-6">
                   <Quote className="h-6 w-6 text-white/70" />
@@ -278,23 +281,23 @@ export default function LandingPage() {
       </section>
 
       <PricingSection
+        className="relative"
         plans={DELTAHEDGE_PLANS}
         heading="Scegli quanti slot vuoi far lavorare"
         description="Parti gratis con 1 trade di prova. Quando vuoi andare live, scegli quanti slot attivare ogni mese oppure passa al piano annuale."
       />
 
       <section className="relative z-10 px-6 pb-24 pt-10 md:pb-32">
-        <div className="mx-auto max-w-5xl rounded-[2rem] border border-white/10 bg-white/[0.04] p-8 backdrop-blur-sm md:p-12">
+        <div className="brand-surface mx-auto max-w-5xl rounded-[2rem] p-8 md:p-12">
           <div className="mx-auto max-w-3xl text-center">
-            <span className="inline-flex items-center rounded-full border border-white/10 bg-white/[0.03] px-4 py-1 text-xs uppercase tracking-[0.35em] text-zinc-400">
+            <span className="brand-pill inline-flex items-center rounded-full px-4 py-1 text-xs uppercase tracking-[0.35em] text-zinc-300">
               Newsletter privata
             </span>
             <h2 className="mt-5 text-balance text-4xl font-semibold tracking-tight text-white md:text-5xl">
-              Ricevi aggiornamenti, nuovi slot e novità prodotto senza rumore inutile.
+              Vuoi seguire l’evoluzione del prodotto prima degli altri?
             </h2>
             <p className="mt-5 text-lg leading-8 text-zinc-400">
-              Ti scriviamo solo quando c&apos;è qualcosa di davvero utile: novità della
-              piattaforma, aperture, miglioramenti e nuove funzioni.
+              Ti aggiorniamo solo quando c’è qualcosa che cambia davvero l’esperienza: nuove funzioni, nuovi slot disponibili e miglioramenti operativi.
             </p>
           </div>
 
@@ -307,13 +310,13 @@ export default function LandingPage() {
               value={email}
               onChange={(event) => setEmail(event.target.value)}
               placeholder="Scrivi la tua email"
-              className="h-12 rounded-2xl border-white/10 bg-black/40 px-4 text-white placeholder:text-zinc-500 focus-visible:ring-white/20"
+              className="h-12 rounded-2xl border-white/10 bg-[#0a1020]/80 px-4 text-white placeholder:text-zinc-500 focus-visible:ring-primary/20"
             />
             <button
               type="submit"
               className={cn(
                 buttonVariants({ size: "lg" }),
-                "h-12 rounded-2xl bg-white px-6 text-black hover:bg-white/90",
+                "h-12 rounded-2xl bg-[linear-gradient(135deg,#f8fbff_0%,#d9e0ff_55%,#9be7ff_100%)] px-6 text-[#06101d] hover:brightness-105",
               )}
             >
               Ricevi aggiornamenti
@@ -335,7 +338,7 @@ export default function LandingPage() {
               to="/login"
               className={cn(
                 buttonVariants({ size: "lg" }),
-                "rounded-2xl bg-white px-6 text-black hover:bg-white/90",
+                "rounded-2xl bg-[linear-gradient(135deg,#f8fbff_0%,#d9e0ff_55%,#9be7ff_100%)] px-6 text-[#06101d] hover:brightness-105",
               )}
             >
               Entra nella dashboard
@@ -344,7 +347,7 @@ export default function LandingPage() {
               href="#come-funziona"
               className={cn(
                 buttonVariants({ variant: "ghost", size: "lg" }),
-                "rounded-2xl border border-white/10 bg-transparent px-6 text-white hover:bg-white/5",
+                "rounded-2xl border border-white/10 bg-[linear-gradient(180deg,rgba(16,22,38,0.78),rgba(10,14,26,0.92))] px-6 text-white hover:bg-white/5",
               )}
             >
               Leggi come funziona

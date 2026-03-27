@@ -51,13 +51,11 @@ export function PricingSection({
   const [frequency, setFrequency] = React.useState<Frequency>("monthly");
 
   return (
-    <section
-      className={cn("relative z-10 px-6 py-24 md:py-32", className)}
-      {...props}
-    >
+    <section className={cn("relative z-10 px-6 py-24 md:py-32", className)} {...props}>
+      <div className="pointer-events-none absolute inset-x-0 top-10 mx-auto h-72 max-w-4xl rounded-full bg-[#7b89ff]/8 blur-3xl" />
       <div className="mx-auto flex w-full max-w-6xl flex-col items-center justify-center space-y-6">
         <div className="mx-auto max-w-2xl space-y-3 text-center">
-          <span className="inline-flex items-center rounded-full border border-white/10 bg-white/[0.03] px-4 py-1 text-xs uppercase tracking-[0.35em] text-zinc-400">
+          <span className="brand-pill inline-flex items-center rounded-full px-4 py-1 text-xs uppercase tracking-[0.35em] text-zinc-300">
             Prezzi
           </span>
           <h2 className="text-balance text-3xl font-semibold tracking-tight text-white md:text-4xl lg:text-5xl">
@@ -99,7 +97,7 @@ function PricingFrequencyToggle({
   return (
     <div
       className={cn(
-        "mx-auto flex w-fit rounded-full border border-white/10 bg-white/[0.03] p-1",
+        "brand-pill mx-auto flex w-fit rounded-full p-1",
         className,
       )}
       {...props}
@@ -116,7 +114,7 @@ function PricingFrequencyToggle({
             <motion.span
               layoutId="pricing-frequency"
               transition={{ type: "spring", duration: 0.35 }}
-              className="absolute inset-0 z-0 rounded-full bg-white"
+              className="absolute inset-0 z-0 rounded-full bg-[linear-gradient(135deg,#f8fbff_0%,#d9e0ff_55%,#9be7ff_100%)]"
             />
           )}
         </button>
@@ -162,8 +160,8 @@ function PricingCard({
   return (
     <div
       className={cn(
-        "relative flex min-h-[31rem] flex-col overflow-hidden rounded-3xl border border-white/10 bg-white/[0.03] backdrop-blur-sm",
-        plan.highlighted && "bg-white/[0.05]",
+        "brand-surface relative flex min-h-[31rem] flex-col overflow-hidden rounded-3xl",
+        plan.highlighted && "shadow-[0_32px_90px_rgba(83,102,255,0.18),inset_0_1px_0_rgba(255,255,255,0.04)]",
         className,
       )}
       {...props}
@@ -171,24 +169,24 @@ function PricingCard({
       {plan.highlighted && (
         <BorderTrail
           size={110}
-          className="bg-white"
-          style={{
-            boxShadow:
-              "0px 0px 48px 18px rgb(255 255 255 / 20%), 0 0 90px 50px rgb(0 0 0 / 40%)",
-          }}
-        />
+        className="bg-[linear-gradient(135deg,#b8c2ff,#67e8f9)]"
+        style={{
+          boxShadow:
+            "0px 0px 48px 18px rgb(184 194 255 / 22%), 0 0 90px 50px rgb(0 0 0 / 40%)",
+        }}
+      />
       )}
 
-      <div className={cn("relative border-b border-white/10 p-6", plan.highlighted && "bg-white/[0.02]")}>
+      <div className={cn("relative border-b border-white/10 p-6", plan.highlighted && "bg-white/[0.03]")}>
         <div className="absolute right-4 top-4 z-10 flex items-center gap-2">
           {plan.highlighted && (
-            <span className="inline-flex items-center gap-1 rounded-md border border-white/10 bg-black/40 px-2 py-1 text-[11px] font-medium uppercase tracking-[0.18em] text-white">
+            <span className="inline-flex items-center gap-1 rounded-md border border-white/10 bg-[#0a1020]/80 px-2 py-1 text-[11px] font-medium uppercase tracking-[0.18em] text-white">
               <StarIcon className="h-3 w-3 fill-current" />
               Popolare
             </span>
           )}
           {frequency === "yearly" && savings > 0 && (
-            <span className="inline-flex items-center rounded-md border border-white/10 bg-white text-[11px] font-medium uppercase tracking-[0.18em] text-black px-2 py-1">
+            <span className="inline-flex items-center rounded-md border border-white/10 bg-[linear-gradient(135deg,#f8fbff_0%,#d9e0ff_55%,#9be7ff_100%)] px-2 py-1 text-[11px] font-medium uppercase tracking-[0.18em] text-[#06101d]">
               -{savings}%
             </span>
           )}
@@ -236,7 +234,7 @@ function PricingCard({
         ))}
       </div>
 
-      <div className={cn("mt-auto border-t border-white/10 p-4", plan.highlighted && "bg-white/[0.02]")}>
+      <div className={cn("mt-auto border-t border-white/10 p-4", plan.highlighted && "bg-white/[0.03]")}>
         {plan.btn.internal ? (
           <Link to={plan.btn.href} className={buttonClassName}>
             {plan.btn.text}

@@ -229,17 +229,16 @@ const exportScopeOptions = [
   },
 ];
 
-const panelClass =
-  "rounded-xl border border-white/8 bg-white/[0.03] shadow-[0_24px_70px_rgba(0,0,0,0.34),inset_0_1px_0_rgba(255,255,255,0.03)] backdrop-blur-2xl";
+const panelClass = "brand-surface rounded-[24px]";
 
 const inputClass =
-  "h-11 w-full rounded-md border border-white/8 bg-white/[0.03] px-3 text-sm text-foreground outline-none transition placeholder:text-muted-foreground focus:border-primary/40 focus:ring-2 focus:ring-primary/20";
+  "h-11 w-full rounded-xl border border-white/10 bg-[linear-gradient(180deg,rgba(16,22,38,0.86),rgba(10,14,25,0.96))] px-3 text-sm text-foreground outline-none transition placeholder:text-muted-foreground focus:border-primary/45 focus:ring-2 focus:ring-primary/20";
 
 const primaryButtonClass =
-  "rounded-md border border-white/10 bg-primary text-primary-foreground shadow-[0_10px_24px_rgba(255,255,255,0.08)] hover:bg-primary/90";
+  "rounded-xl border border-white/10 bg-[linear-gradient(135deg,#f8fbff_0%,#d9e0ff_45%,#9be7ff_100%)] text-[#07101f] shadow-[0_18px_42px_rgba(96,105,255,0.28)] hover:brightness-105";
 
 const secondaryButtonClass =
-  "rounded-md border border-white/8 bg-white/[0.03] text-foreground hover:bg-white/[0.06]";
+  "rounded-xl border border-white/10 bg-[linear-gradient(180deg,rgba(18,24,42,0.88),rgba(10,14,26,0.96))] text-foreground hover:border-white/15 hover:bg-white/[0.05]";
 
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL?.replace(/\/+$/, "");
 const localStateStorageKey = "deltahedge.local-dashboard-state.v1";
@@ -1356,8 +1355,8 @@ function FundingPipsWordmark({ className = "", large = false }) {
     <div
       className={`${large ? "flex w-full" : "inline-flex"} items-center text-white shadow-[inset_0_0_0_1px_rgba(255,255,255,0.05)] ${
         large
-          ? "min-h-[78px] gap-4 bg-[linear-gradient(180deg,rgba(255,255,255,0.045),rgba(255,255,255,0.02))] px-4 py-4"
-          : "gap-2 rounded-md bg-white/[0.04] px-3 py-2"
+          ? "min-h-[78px] gap-4 bg-[linear-gradient(180deg,rgba(24,30,54,0.78),rgba(9,13,24,0.92))] px-4 py-4"
+          : "gap-2 rounded-xl bg-[linear-gradient(180deg,rgba(24,30,54,0.72),rgba(10,14,24,0.92))] px-3 py-2"
       } ${className}`}
     >
       <FundingPipsLogo
@@ -1375,9 +1374,9 @@ function FundingPipsWordmark({ className = "", large = false }) {
 function DeltaHedgeWordmark({ className = "" }) {
   return (
     <div className={`inline-flex items-center gap-3 ${className}`}>
-      <DeltaHedgeLogo className="size-11 shrink-0 text-primary" />
+      <DeltaHedgeLogo className="size-11 shrink-0 text-primary drop-shadow-[0_0_24px_rgba(123,137,255,0.2)]" />
       <div className="flex items-baseline text-[22px] font-black uppercase tracking-[-0.05em]">
-        <span className="text-primary">Delta</span>
+        <span className="brand-gradient-text">Delta</span>
         <span className="text-foreground">Hedge</span>
       </div>
     </div>
@@ -1422,7 +1421,7 @@ function SlotPowerSwitch({ checked, onToggle, title }) {
 
 function CompactSummaryCard({ label, value, note, change }) {
   return (
-    <div className="rounded-lg border border-white/8 bg-[linear-gradient(180deg,rgba(24,24,24,0.72),rgba(12,12,12,0.9))] px-4 py-4 shadow-[0_18px_44px_rgba(0,0,0,0.24),inset_0_1px_0_rgba(255,255,255,0.03)] backdrop-blur-xl">
+    <div className="brand-surface-soft rounded-[22px] px-4 py-4">
       <div className="flex items-start justify-between gap-3">
         <div className="text-xs uppercase tracking-[0.14em] text-muted-foreground">{label}</div>
         {change ? (
@@ -1452,7 +1451,7 @@ function GuideStrip({ steps }) {
 
   return (
     <div className="sticky top-4 z-10 border-b border-border/80 bg-background/92 pb-4 pt-1 backdrop-blur-md">
-      <div className="rounded-xl border border-white/8 bg-[linear-gradient(180deg,rgba(18,18,18,0.7),rgba(10,10,10,0.88))] px-4 py-5 shadow-[0_22px_52px_rgba(0,0,0,0.3),inset_0_1px_0_rgba(255,255,255,0.03)] backdrop-blur-xl">
+      <div className="brand-surface rounded-[24px] px-4 py-5">
         <div className="flex items-center justify-between gap-3">
           <div className="text-[11px] uppercase tracking-[0.16em] text-muted-foreground">
             Progress tracker
@@ -4805,15 +4804,15 @@ function App() {
   }
 
   return (
-    <div className="dark relative min-h-screen overflow-hidden bg-background text-foreground">
+    <div className="dark brand-shell relative min-h-screen overflow-hidden text-foreground">
       <div
         className="pointer-events-none absolute inset-0"
         style={{
           backgroundImage: `
-            radial-gradient(circle at top right, rgba(255,255,255,0.12), transparent 30%),
-            radial-gradient(circle at top right, rgba(255,255,255,0.07), transparent 18%),
-            radial-gradient(circle at bottom left, rgba(255,255,255,0.06), transparent 24%),
-            radial-gradient(circle, rgba(255,255,255,0.07) 1px, transparent 1px)
+            radial-gradient(circle at top right, rgba(123,137,255,0.18), transparent 28%),
+            radial-gradient(circle at top right, rgba(103,232,249,0.08), transparent 14%),
+            radial-gradient(circle at bottom left, rgba(45,212,191,0.08), transparent 22%),
+            radial-gradient(circle, rgba(158,171,204,0.08) 1px, transparent 1px)
           `,
           backgroundSize: "auto, auto, auto, 18px 18px",
           backgroundPosition: "center, center, center, 0 0",
@@ -4821,7 +4820,7 @@ function App() {
       />
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
         <motion.div
-          className="absolute -right-24 top-[-12rem] h-[36rem] w-[36rem] rounded-full bg-[radial-gradient(circle,rgba(255,255,255,0.16)_0,rgba(255,255,255,0.02)_48%,transparent_72%)] blur-3xl"
+          className="absolute -right-24 top-[-12rem] h-[36rem] w-[36rem] rounded-full bg-[radial-gradient(circle,rgba(123,137,255,0.28)_0,rgba(123,137,255,0.04)_45%,transparent_72%)] blur-3xl"
           animate={{
             x: [0, -36, 0],
             y: [0, 26, 0],
@@ -4831,7 +4830,7 @@ function App() {
           transition={{ duration: 16, repeat: Infinity, ease: "easeInOut" }}
         />
         <motion.div
-          className="absolute -left-28 bottom-[-14rem] h-[28rem] w-[28rem] rounded-full bg-[radial-gradient(circle,rgba(255,255,255,0.1)_0,rgba(255,255,255,0.02)_45%,transparent_72%)] blur-3xl"
+          className="absolute -left-28 bottom-[-14rem] h-[28rem] w-[28rem] rounded-full bg-[radial-gradient(circle,rgba(45,212,191,0.2)_0,rgba(45,212,191,0.03)_44%,transparent_72%)] blur-3xl"
           animate={{
             x: [0, 30, 0],
             y: [0, -18, 0],
@@ -4843,7 +4842,7 @@ function App() {
       </div>
       <div className="relative mx-auto max-w-[1600px] p-4 sm:p-6">
         <div className="grid gap-5 xl:grid-cols-[248px_minmax(0,1fr)]">
-          <aside className="rounded-xl border border-border/80 bg-card/90 p-4 shadow-[0_24px_80px_rgba(0,0,0,0.3)] backdrop-blur-xl">
+          <aside className="brand-surface sticky top-4 rounded-[28px] p-4">
             <div className="flex items-center gap-3 border-b border-border/80 pb-5">
               <div>
                 <DeltaHedgeWordmark />
@@ -4867,10 +4866,10 @@ function App() {
                           key={label}
                           type="button"
                           onClick={() => setActiveSection(label)}
-                          className={`flex w-full items-center justify-between rounded-lg px-3 py-2.5 text-left text-sm transition ${
+                          className={`flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-left text-sm transition ${
                             active
-                              ? "bg-primary/12 font-medium text-foreground"
-                              : "text-muted-foreground hover:bg-muted/45 hover:text-foreground"
+                              ? "bg-[linear-gradient(135deg,rgba(123,137,255,0.18),rgba(45,212,191,0.12))] font-medium text-foreground shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]"
+                              : "text-muted-foreground hover:bg-white/[0.05] hover:text-foreground"
                           }`}
                         >
                           <span className="flex items-center gap-3">
@@ -4888,7 +4887,7 @@ function App() {
               ))}
             </div>
 
-            <div className="rounded-lg border border-border/80 bg-muted/20 p-4">
+            <div className="brand-surface-soft rounded-[22px] p-4">
               <div className="text-xs font-medium text-muted-foreground">Guida iniziale</div>
               <div className="mt-3 text-sm text-muted-foreground">
                 {nextActionDescription}
@@ -4923,7 +4922,7 @@ function App() {
 
               <div className="flex items-center gap-3">
                 {(isOverview || isAccountsLibrary) && (slots.length > 0 || savedAccounts.length > 0) ? (
-                  <div className="flex h-11 min-w-[280px] items-center gap-3 rounded-lg border border-border/80 bg-card px-4 text-sm text-muted-foreground shadow-[0_10px_30px_rgba(0,0,0,0.16)]">
+                  <div className="brand-surface-soft flex h-11 min-w-[280px] items-center gap-3 rounded-2xl px-4 text-sm text-muted-foreground">
                     <Search className="size-4" />
                     <input
                       className="w-full bg-transparent outline-none placeholder:text-muted-foreground"
@@ -4941,7 +4940,7 @@ function App() {
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="size-11 rounded-lg border border-border/80 bg-card text-muted-foreground shadow-[0_10px_30px_rgba(0,0,0,0.16)] hover:bg-muted/60 hover:text-foreground"
+                  className="brand-surface-soft size-11 rounded-2xl text-muted-foreground hover:bg-white/[0.06] hover:text-foreground"
                   onClick={openNotificationsPanel}
                 >
                   <BellDot className="size-4" />
@@ -4950,7 +4949,7 @@ function App() {
                 <Button
                   type="button"
                   variant="ghost"
-                  className="h-11 rounded-lg border border-border/80 bg-card px-4 text-muted-foreground shadow-[0_10px_30px_rgba(0,0,0,0.16)] hover:bg-muted/60 hover:text-foreground"
+                  className="brand-surface-soft h-11 rounded-2xl px-4 text-muted-foreground hover:bg-white/[0.06] hover:text-foreground"
                   onClick={handleSignOut}
                 >
                   <span className="hidden max-w-[160px] truncate text-sm font-medium sm:block">
