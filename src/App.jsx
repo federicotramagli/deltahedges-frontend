@@ -103,8 +103,12 @@ const initialProfiles = [
 const initialSubscription = {
   planName: "Growth",
   slotsIncluded: 8,
+  usedSlots: 0,
+  availableSlots: 8,
   renewalDate: "12 Apr 2026",
   billingCadence: "Mensile",
+  canCreateSlot: true,
+  canManageAccounts: true,
 };
 
 const initialNotifications = [];
@@ -406,6 +410,8 @@ function getChallengeCost(challenge) {
 }
 
 function getCycleOutcomeLabel(value) {
+  if (value === "PASS_FASE_1") return "Fase 1 Passed";
+  if (value === "PASS_FASE_2") return "Fase 2 Passed";
   if (value === "FAIL_FASE_1") return "Fail Fase 1";
   if (value === "FAIL_FASE_2") return "Fail Fase 2";
   if (value === "FAIL_FUNDED") return "Fail Funded";
@@ -413,6 +419,10 @@ function getCycleOutcomeLabel(value) {
 }
 
 function getCycleOutcomeBadgeClass(value) {
+  if (value === "PASS_FASE_1" || value === "PASS_FASE_2") {
+    return "border-emerald-500/20 bg-emerald-500/10 text-emerald-300 hover:bg-emerald-500/10";
+  }
+
   if (value === "FAIL_FUNDED") {
     return "border-rose-500/20 bg-rose-500/10 text-rose-300 hover:bg-rose-500/10";
   }
@@ -422,6 +432,93 @@ function getCycleOutcomeBadgeClass(value) {
   }
 
   return "border-primary/20 bg-primary/10 text-primary hover:bg-primary/10";
+}
+
+function getSavedAccountStatusMeta(account) {
+  if (account?.connectionState === "connected") {
+    return {
+      dotClass: "bg-emerald-400",
+      badgeClass:
+        "border-emerald-500/20 bg-emerald-500/10 text-emerald-300 hover:bg-emerald-500/10",
+      label: "Connesso",
+      note:
+        account?.balance || account?.equity
+          ? `Balance ${formatLiveCurrencyValue(account.balance)} · Equity ${formatLiveCurrencyValue(account.equity)}`
+          : account?.connectionStatus || "MetaApi confermato",
+    };
+  }
+
+  if (account?.connectionState === "error") {
+    return {
+      dotClass: "bg-rose-400",
+      badgeClass:
+        "border-rose-500/20 bg-rose-500/10 text-rose-300 hover:bg-rose-500/10",
+      label: "Errore",
+      note: account?.validationMessage || "Credenziali o server da ricontrollare",
+    };
+  }
+
+  return {
+    dotClass: "bg-amber-400",
+    badgeClass:
+      "border-amber-500/20 bg-amber-500/10 text-amber-300 hover:bg-amber-500/10",
+    label: "In verifica",
+    note: account?.validationMessage || "Connessione MetaApi in corso",
+  };
+}
+
+function isSavedAccountReady(account) {
+  return account?.connectionState === "connected";
+}
+
+function getCycleStateMeta(cycleState, challengeState) {
+  if (cycleState === "FASE_1_PASSED") {
+    return {
+      label: "Fase 1 Passed",
+      icon: "check",
+      className:
+        "border-emerald-500/20 bg-emerald-500/10 text-emerald-300",
+    };
+  }
+
+  if (cycleState === "FASE_2_PASSED") {
+    return {
+      label: "Fase 2 Passed",
+      icon: "check",
+      className:
+        "border-emerald-500/20 bg-emerald-500/10 text-emerald-300",
+    };
+  }
+
+  if (
+    cycleState === "FASE_1_FAILED" ||
+    cycleState === "FASE_2_FAILED" ||
+    cycleState === "FUNDED_FAILED"
+  ) {
+    return {
+      label: challengeState === "AVAILABLE" ? "Slot liberato" : "Failed",
+      icon: "x",
+      className: "border-rose-500/20 bg-rose-500/10 text-rose-300",
+    };
+  }
+
+  return null;
+}
+
+function getDefaultProfileNameForPhase(phase) {
+  if (phase === "Fase 1") return "Preset Fase 1";
+  if (phase === "Fase 2") return "Preset Fase 2";
+  return "Preset Funded";
+}
+
+function getWizardBrokerStartEquity(slotDraft, brokerAccount) {
+  if (Number(slotDraft?.brokerStartEquity || 0) > 0) {
+    return Number(slotDraft.brokerStartEquity);
+  }
+
+  if (!brokerAccount) return 0;
+
+  return Number(brokerAccount.equity ?? brokerAccount.balance ?? 0);
 }
 
 function buildEquityCurve(cycleLogs) {
@@ -570,15 +667,16 @@ function createEmptySlot(index, profileName, existingSlots = []) {
     brokerSavedAccountId: null,
     challengeState: "BOZZA",
     status: "OPEN",
+    cycleState: "FASE_1_ACTIVE",
     parametersProfile: profileName,
     propEquity: 100000,
-    brokerEquity: 4000,
+    brokerEquity: 0,
     propUnrealizedPnl: null,
     brokerUnrealizedPnl: null,
-    target: 1529,
-    hedgeBaseTarget: 1529,
-    multiplier: 0.1529,
-    brokerStartEquity: 4000,
+    target: 1000,
+    hedgeBaseTarget: 1000,
+    multiplier: 0.1,
+    brokerStartEquity: 0,
     cycleBalance: 0,
     riskPerTrade: 1.5,
     maxDailyTrades: 2,
@@ -607,6 +705,11 @@ function createEmptySavedAccountDraft(accountType = "PROP") {
     password: "",
     server: "",
     lotStep: 0.01,
+    connectionState: "pending",
+    validationMessage: null,
+    connectionStatus: null,
+    balance: null,
+    equity: null,
   };
 }
 
@@ -659,6 +762,13 @@ function ensureSavedAccountsFromSlots(slots = [], accounts = []) {
         loginMasked: maskLoginForLibrary(propLogin),
         server: propServer,
         lotStep: 0.01,
+        connectionState: "connected",
+        validationMessage: null,
+        connectionStatus: "CONNECTED",
+        balance: null,
+        equity: null,
+        metaApiAccountId: slot.propMetaApiAccountId || null,
+        lastValidatedAt: new Date().toISOString(),
         createdAt: new Date().toISOString(),
         login: propLogin,
         password: slot.propPassword || "",
@@ -678,6 +788,13 @@ function ensureSavedAccountsFromSlots(slots = [], accounts = []) {
         loginMasked: maskLoginForLibrary(brokerLogin),
         server: brokerServer,
         lotStep: Number(slot.brokerLotStep || 0.01),
+        connectionState: "connected",
+        validationMessage: null,
+        connectionStatus: "CONNECTED",
+        balance: null,
+        equity: null,
+        metaApiAccountId: slot.brokerMetaApiAccountId || null,
+        lastValidatedAt: new Date().toISOString(),
         createdAt: new Date().toISOString(),
         login: brokerLogin,
         password: slot.brokerPassword || "",
@@ -712,6 +829,7 @@ function mapApiSlotToUiSlot(slot) {
     brokerSavedAccountId: null,
     challengeState: slot.challengeState,
     status: slot.status,
+    cycleState: slot.cycleState || "FASE_1_ACTIVE",
     parametersProfile: slot.parametersProfile || "",
     propEquity: Number(slot.propEquity || 0),
     brokerEquity: Number(slot.brokerEquity || 0),
@@ -737,8 +855,8 @@ function mapApiSlotToUiSlot(slot) {
     brokerConnectionState: slot.brokerConnectionState || "empty",
     metaApiStatus: slot.metaApiStatus || "empty",
     brokerLotStep: 0.01,
-    propMetaApiAccountId: null,
-    brokerMetaApiAccountId: null,
+    propMetaApiAccountId: slot.propMetaApiAccountId || null,
+    brokerMetaApiAccountId: slot.brokerMetaApiAccountId || null,
     testLog: "",
     updatedAt: slot.updatedAt || nowHourMinute(),
   };
@@ -1226,6 +1344,14 @@ function ChallengeStateBadge({ value }) {
     );
   }
 
+  if (value === "AVAILABLE") {
+    return (
+      <Badge className="border-emerald-500/20 bg-emerald-500/10 text-emerald-300 hover:bg-emerald-500/10">
+        AVAILABLE
+      </Badge>
+    );
+  }
+
   return (
     <Badge className="border-border/80 bg-muted/35 text-muted-foreground hover:bg-muted/35">
       BOZZA
@@ -1586,8 +1712,12 @@ function Drawer({
   onSave,
   saveLabel,
   saveDisabled = false,
+  saveLoading = false,
   savePendingLabel = null,
   footerHint = null,
+  auxActionLabel = null,
+  onAuxAction = null,
+  auxActionDisabled = false,
   maxWidthClass = "max-w-[760px]",
 }) {
   return (
@@ -1640,14 +1770,25 @@ function Drawer({
           ) : (
             <div className="flex-1" />
           )}
+          {auxActionLabel && onAuxAction ? (
+            <Button
+              type="button"
+              variant="outline"
+              className={secondaryButtonClass}
+              onClick={onAuxAction}
+              disabled={auxActionDisabled}
+            >
+              {auxActionLabel}
+            </Button>
+          ) : null}
           {onSave ? (
             <Button
               type="button"
               className={primaryButtonClass}
               onClick={onSave}
-              disabled={saveDisabled}
+              disabled={saveDisabled || saveLoading}
             >
-              {saveDisabled && savePendingLabel ? savePendingLabel : saveLabel}
+              {saveLoading && savePendingLabel ? savePendingLabel : saveLabel}
             </Button>
           ) : null}
         </div>
@@ -1669,12 +1810,14 @@ function App() {
   const [tradeLedger, setTradeLedger] = useState([]);
   const [testingSlotId, setTestingSlotId] = useState(null);
   const [savingConnectionsSlotId, setSavingConnectionsSlotId] = useState(null);
+  const [savingSavedAccountType, setSavingSavedAccountType] = useState(null);
   const slotsRef = useRef(initialSlots);
   const connectionMonitorRef = useRef(new Map());
   const [selectedSlotId, setSelectedSlotId] = useState(initialSlots[0]?.id ?? null);
   const [panel, setPanel] = useState({ type: null, source: null });
   const [openStrategyQuestion, setOpenStrategyQuestion] = useState(0);
   const [slotDraft, setSlotDraft] = useState(null);
+  const [slotWizardStep, setSlotWizardStep] = useState(1);
   const [tradeTestDraft, setTradeTestDraft] = useState(null);
   const [savedAccountDraft, setSavedAccountDraft] = useState(null);
   const [profileDraft, setProfileDraft] = useState(null);
@@ -1713,6 +1856,13 @@ function App() {
   }
 
   function openSavedAccountPanel(accountType = "PROP") {
+    if (!subscription.canManageAccounts && Number(subscription.availableSlots || 0) <= 0) {
+      pushNotification(
+        "Conti bloccati",
+        "Puoi collegare nuovi conti solo se hai almeno uno slot pagato e disponibile.",
+      );
+      return;
+    }
     setSavedAccountDraft(createEmptySavedAccountDraft(accountType));
     openPanel("saved-account");
   }
@@ -1746,6 +1896,13 @@ function App() {
         savedAccountDraft.accountType === "BROKER"
           ? Number(savedAccountDraft.lotStep || 0.01)
           : 0.01,
+      connectionState: "connected",
+      validationMessage: null,
+      connectionStatus: "CONNECTED",
+      balance: null,
+      equity: null,
+      metaApiAccountId: null,
+      lastValidatedAt: createdAt,
       createdAt,
       login: savedAccountDraft.login.trim(),
       password: savedAccountDraft.password.trim(),
@@ -1778,6 +1935,7 @@ function App() {
     }
 
     try {
+      setSavingSavedAccountType(savedAccountDraft.accountType);
       const payload = await apiRequest("/accounts-library", {
         method: "POST",
         body: JSON.stringify({
@@ -1796,10 +1954,8 @@ function App() {
         payload.account,
         ...current.filter((item) => item.id !== payload.account.id),
       ]);
-      pushNotification(
-        `${payload.account.label} salvato`,
-        "Il conto e stato salvato nel backend e puo essere importato negli slot.",
-      );
+      const statusMeta = getSavedAccountStatusMeta(payload.account);
+      pushNotification(`${payload.account.label} salvato`, statusMeta.note);
       closePanel();
     } catch (error) {
       console.error("[DeltaHedge] save saved account failed", error);
@@ -1809,6 +1965,8 @@ function App() {
           ? error.message
           : "Salvataggio backend non riuscito.",
       );
+    } finally {
+      setSavingSavedAccountType(null);
     }
   }
 
@@ -2072,8 +2230,12 @@ function App() {
       setSubscription({
         planName: slotsPayload.subscription.planName || "Nessun piano",
         slotsIncluded: Number(slotsPayload.subscription.slotsIncluded || 0),
+        usedSlots: Number(slotsPayload.subscription.usedSlots || 0),
+        availableSlots: Number(slotsPayload.subscription.availableSlots || 0),
         renewalDate: slotsPayload.subscription.renewalDate || "In attesa",
         billingCadence: slotsPayload.subscription.billingCadence || "Mensile",
+        canCreateSlot: Boolean(slotsPayload.subscription.canCreateSlot),
+        canManageAccounts: Boolean(slotsPayload.subscription.canManageAccounts),
       });
     }
 
@@ -2159,7 +2321,7 @@ function App() {
   const fundedCount = slots.filter(
     (slot) => slot.challengeState === "ATTIVA" && slot.phase === "Funded",
   ).length;
-  const availableSlots = Math.max(subscription.slotsIncluded - slots.length, 0);
+  const availableSlots = Number(subscription.availableSlots || 0);
   const savedPropAccountsCount = savedAccounts.filter(
     (account) => account.accountType === "PROP",
   ).length;
@@ -2241,16 +2403,16 @@ function App() {
       note: `${filteredSavedAccounts.length} visibili con il filtro corrente`,
     },
     {
-      key: "saved-prop",
-      label: "Prop salvati",
-      value: String(savedPropAccountsCount),
-      note: "Importabili nella challenge dello slot",
+      key: "saved-ready",
+      label: "Conti connessi",
+      value: String(savedAccounts.filter((account) => account.connectionState === "connected").length),
+      note: "Con pallino verde, pronti per essere usati negli slot",
     },
     {
-      key: "saved-broker",
-      label: "Broker salvati",
-      value: String(savedBrokerAccountsCount),
-      note: "Importabili nel lato broker dello slot",
+      key: "saved-errors",
+      label: "Da rivedere",
+      value: String(savedAccounts.filter((account) => account.connectionState === "error").length),
+      note: "Conti con errore di connessione o credenziali da ricontrollare",
     },
   ];
 
@@ -2261,11 +2423,238 @@ function App() {
   function closePanel() {
     setPanel({ type: null, source: null });
     setTradeTestDraft(null);
+    setSlotWizardStep(1);
   }
 
   function openAddSlot() {
+    if (!(Number(subscription.availableSlots || 0) > 0)) {
+      pushNotification(
+        "Nessuno slot disponibile",
+        "Ti serve almeno uno slot pagato e libero prima di creare una nuova coppia.",
+      );
+      return;
+    }
     setSlotDraft(createEmptySlot(slots.length + 1, "", slots));
+    setSlotWizardStep(1);
     openPanel("add-slot");
+  }
+
+  function updateSlotWizardPhase(nextPhase) {
+    setSlotDraft((current) => {
+      if (!current) return current;
+
+      return {
+        ...current,
+        phase: nextPhase,
+        hedgeBaseTarget:
+          nextPhase === "Fase 1"
+            ? 1000
+            : Number(current.hedgeBaseTarget || current.target || 1000),
+        target:
+          nextPhase === "Fase 1"
+            ? 1000
+            : Number(current.target || current.hedgeBaseTarget || 1000),
+      };
+    });
+  }
+
+  function syncWizardSelectedAccount(side, savedAccountId) {
+    const selectedAccount = savedAccounts.find((item) => item.id === savedAccountId);
+
+    setSlotDraft((current) => {
+      if (!current) return current;
+
+      if (side === "prop") {
+        return {
+          ...current,
+          propSavedAccountId: savedAccountId || null,
+          propPlatform: selectedAccount?.platform ?? current.propPlatform,
+          propLoginMasked: selectedAccount?.loginMasked ?? current.propLoginMasked,
+          propServerHint: selectedAccount?.server ?? current.propServerHint,
+        };
+      }
+
+      return {
+        ...current,
+        brokerSavedAccountId: savedAccountId || null,
+        brokerAccount: selectedAccount?.accountName ?? current.brokerAccount,
+        brokerPlatform: selectedAccount?.platform ?? current.brokerPlatform,
+        brokerLotStep: selectedAccount?.lotStep ?? current.brokerLotStep,
+        brokerLoginMasked: selectedAccount?.loginMasked ?? current.brokerLoginMasked,
+        brokerServerHint: selectedAccount?.server ?? current.brokerServerHint,
+        brokerStartEquity:
+          Number(selectedAccount?.equity ?? selectedAccount?.balance ?? 0) ||
+          current.brokerStartEquity,
+      };
+    });
+  }
+
+  async function completeSlotWizard() {
+    if (!slotDraft) return;
+
+    const propAccount = savedAccounts.find(
+      (item) => item.id === slotDraft.propSavedAccountId,
+    );
+    const brokerAccount = savedAccounts.find(
+      (item) => item.id === slotDraft.brokerSavedAccountId,
+    );
+
+    if (!propAccount || !brokerAccount) {
+      pushNotification(
+        "Conti mancanti",
+        "Seleziona un conto prop e un conto broker gia validati.",
+      );
+      return;
+    }
+
+    if (!isSavedAccountReady(propAccount) || !isSavedAccountReady(brokerAccount)) {
+      pushNotification(
+        "Conti non pronti",
+        "Puoi usare nello slot solo conti gia verificati e connessi in Conti.",
+      );
+      return;
+    }
+
+    try {
+      const createPayload = await apiRequest("/slots", {
+        method: "POST",
+        body: JSON.stringify({
+          slot: slotDraft.slot,
+          challenge: slotDraft.challenge,
+          phase: slotDraft.phase,
+        }),
+      });
+
+      const backendSlot = mapApiSlotToUiSlot(createPayload.slot);
+
+      await apiRequest(`/slots/${backendSlot.id}/accounts`, {
+        method: "POST",
+        body: JSON.stringify({
+          challenge: slotDraft.challenge,
+          prop: {
+            savedAccountId: normaliseSavedAccountId(slotDraft.propSavedAccountId),
+            platform: slotDraft.propPlatform || "mt5",
+            login: "",
+            password: "",
+            server: "",
+          },
+          broker: {
+            accountName: brokerAccount.accountName || slotDraft.brokerAccount || "Broker",
+            savedAccountId: normaliseSavedAccountId(slotDraft.brokerSavedAccountId),
+            platform: slotDraft.brokerPlatform || "mt5",
+            login: "",
+            password: "",
+            server: "",
+            lotStep: Number(brokerAccount.lotStep || slotDraft.brokerLotStep || 0.01),
+          },
+        }),
+      });
+
+      const profileName =
+        profileDraft?.name?.trim() || getDefaultProfileNameForPhase(slotDraft.phase);
+      const riskPerTrade = Number(
+        profileDraft?.riskPerTrade ?? slotDraft.riskPerTrade ?? 1.5,
+      );
+      const maxDailyTrades = Number(
+        profileDraft?.maxDailyTrades ?? slotDraft.maxDailyTrades ?? 2,
+      );
+      const orphanTimeoutMs = Number(
+        profileDraft?.orphanTimeoutMs ?? slotDraft.orphanTimeoutMs ?? 1000,
+      );
+
+      await apiRequest(`/slots/${backendSlot.id}/parameters`, {
+        method: "POST",
+        body: JSON.stringify({
+          parametersProfile: profileName,
+          hedgeBaseTarget:
+            slotDraft.phase === "Fase 1"
+              ? Number(slotDraft.hedgeBaseTarget || 1000)
+              : Number(slotDraft.hedgeBaseTarget || slotDraft.target || 1000),
+          riskPerTrade,
+          maxDailyTrades,
+          orphanTimeoutMs,
+        }),
+      });
+
+      await loadDashboardData(backendSlot.id);
+      pushNotification(
+        `${slotDraft.slot} creato`,
+        "La coppia e pronta: conti agganciati e parametri iniziali salvati.",
+      );
+      closePanel();
+    } catch (error) {
+      console.error("[DeltaHedge] slot wizard failed", error);
+      pushNotification(
+        "Errore creazione coppia",
+        error instanceof Error
+          ? error.message
+          : "Impossibile completare il wizard dello slot.",
+      );
+    }
+  }
+
+  function advanceSlotWizard() {
+    if (!slotDraft) return;
+
+    if (slotWizardStep === 1) {
+      if (!slotDraft.slot.trim()) {
+        pushNotification("Nome slot mancante", "Dai un nome allo slot prima di continuare.");
+        return;
+      }
+      setSlotWizardStep(2);
+      return;
+    }
+
+    if (slotWizardStep === 2) {
+      const propAccount = savedAccounts.find(
+        (item) => item.id === slotDraft.propSavedAccountId,
+      );
+      const brokerAccount = savedAccounts.find(
+        (item) => item.id === slotDraft.brokerSavedAccountId,
+      );
+
+      if (!propAccount || !brokerAccount) {
+        pushNotification(
+          "Conti mancanti",
+          "Seleziona un conto prop e un conto broker gia verificati.",
+        );
+        return;
+      }
+
+      if (!isSavedAccountReady(propAccount) || !isSavedAccountReady(brokerAccount)) {
+        pushNotification(
+          "Conti non pronti",
+          "Nel wizard puoi scegliere solo conti con pallino verde.",
+        );
+        return;
+      }
+
+      setProfileDraft((current) => ({
+        id: current?.id || `profile_${Date.now()}`,
+        name: current?.name || getDefaultProfileNameForPhase(slotDraft.phase),
+        riskPerTrade: Number(current?.riskPerTrade ?? slotDraft.riskPerTrade ?? 1.5),
+        maxDailyTrades: Number(current?.maxDailyTrades ?? slotDraft.maxDailyTrades ?? 2),
+        orphanTimeoutMs: Number(
+          current?.orphanTimeoutMs ?? slotDraft.orphanTimeoutMs ?? 1000,
+        ),
+      }));
+      setSlotDraft((current) =>
+        current
+          ? {
+              ...current,
+              brokerStartEquity: getWizardBrokerStartEquity(current, brokerAccount),
+              hedgeBaseTarget:
+                current.phase === "Fase 1"
+                  ? Number(current.hedgeBaseTarget || 1000)
+                  : Number(current.hedgeBaseTarget || current.target || 1000),
+            }
+          : current,
+      );
+      setSlotWizardStep(3);
+      return;
+    }
+
+    void completeSlotWizard();
   }
 
   function openSlotParameters(slotId = selectedSlotId) {
@@ -2602,6 +2991,29 @@ function App() {
         setSlotDraft(workingSlot);
       }
 
+      if (!normaliseSavedAccountId(workingSlot.propSavedAccountId)) {
+        throw new Error("Seleziona prima un conto prop connesso dalla sezione Conti.");
+      }
+
+      if (!normaliseSavedAccountId(workingSlot.brokerSavedAccountId)) {
+        throw new Error("Seleziona prima un conto broker connesso dalla sezione Conti.");
+      }
+
+      const selectedBrokerSavedAccount = savedAccounts.find(
+        (item) => item.id === workingSlot.brokerSavedAccountId,
+      );
+      const selectedPropSavedAccount = savedAccounts.find(
+        (item) => item.id === workingSlot.propSavedAccountId,
+      );
+
+      if (!isSavedAccountReady(selectedPropSavedAccount)) {
+        throw new Error("Il conto prop selezionato non e ancora validato.");
+      }
+
+      if (!isSavedAccountReady(selectedBrokerSavedAccount)) {
+        throw new Error("Il conto broker selezionato non e ancora validato.");
+      }
+
       setSlots((current) =>
         current.map((item) =>
           item.id === workingSlot.id
@@ -2627,18 +3039,23 @@ function App() {
           prop: {
             savedAccountId: normaliseSavedAccountId(workingSlot.propSavedAccountId),
             platform: workingSlot.propPlatform || "mt5",
-            login: workingSlot.propLogin || "",
-            password: workingSlot.propPassword || "",
-            server: workingSlot.propServer || "",
+            login: "",
+            password: "",
+            server: "",
           },
           broker: {
-            accountName: workingSlot.brokerAccount || "Broker",
+            accountName:
+              selectedBrokerSavedAccount?.accountName ||
+              workingSlot.brokerAccount ||
+              "Broker",
             savedAccountId: normaliseSavedAccountId(workingSlot.brokerSavedAccountId),
             platform: workingSlot.brokerPlatform || "mt5",
-            login: workingSlot.brokerLogin || "",
-            password: workingSlot.brokerPassword || "",
-            server: workingSlot.brokerServer || "",
-            lotStep: Number(workingSlot.brokerLotStep || 0.01),
+            login: "",
+            password: "",
+            server: "",
+            lotStep: Number(
+              selectedBrokerSavedAccount?.lotStep || workingSlot.brokerLotStep || 0.01,
+            ),
           },
         }),
       });
@@ -2705,8 +3122,10 @@ function App() {
         method: "POST",
         body: JSON.stringify({
           parametersProfile: profileName,
-          brokerStartEquity: Number(workingSlot.brokerStartEquity),
-          hedgeBaseTarget: Number(workingSlot.hedgeBaseTarget),
+          hedgeBaseTarget:
+            workingSlot.phase === "Fase 1"
+              ? Number(workingSlot.hedgeBaseTarget || 1000)
+              : Number(workingSlot.hedgeBaseTarget || workingSlot.target || 1000),
           riskPerTrade: updatedProfile.riskPerTrade,
           maxDailyTrades: updatedProfile.maxDailyTrades,
           orphanTimeoutMs: updatedProfile.orphanTimeoutMs,
@@ -3109,50 +3528,346 @@ function App() {
 
   function renderDrawer() {
     if (panel.type === "add-slot" && slotDraft) {
+      const propReadyAccounts = savedAccounts.filter(
+        (account) => account.accountType === "PROP" && isSavedAccountReady(account),
+      );
+      const brokerReadyAccounts = savedAccounts.filter(
+        (account) => account.accountType === "BROKER" && isSavedAccountReady(account),
+      );
+      const selectedPropAccount = propReadyAccounts.find(
+        (account) => account.id === slotDraft.propSavedAccountId,
+      );
+      const selectedBrokerAccount = brokerReadyAccounts.find(
+        (account) => account.id === slotDraft.brokerSavedAccountId,
+      );
+      const brokerStartEquity = getWizardBrokerStartEquity(
+        slotDraft,
+        selectedBrokerAccount,
+      );
+      const wizardSaveLabel =
+        slotWizardStep === 1 ? "Continua" : slotWizardStep === 2 ? "Conferma conti" : "Crea coppia";
+      const wizardFooterHint =
+        slotWizardStep === 1
+          ? "Step 1 di 3 · scegli fase e challenge."
+          : slotWizardStep === 2
+            ? "Step 2 di 3 · usa solo conti con pallino verde."
+            : "Step 3 di 3 · conferma i parametri di trading.";
       return (
         <Drawer
-          title="Aggiungi slot"
-          description="Primo passo: crea lo slot. Dopo ti guideremo a collegare challenge, broker e preset."
+          title="Nuova coppia"
+          description="Wizard guidato: scegli la fase, aggancia due conti gia validati e conferma il setup iniziale."
           onClose={closePanel}
-          onSave={saveAddedSlot}
-          saveLabel="Crea slot"
+          onSave={advanceSlotWizard}
+          onAuxAction={slotWizardStep > 1 ? () => setSlotWizardStep((current) => current - 1) : null}
+          auxActionLabel={slotWizardStep > 1 ? "Indietro" : null}
+          saveLabel={wizardSaveLabel}
+          footerHint={wizardFooterHint}
+          saveDisabled={
+            (slotWizardStep === 2 &&
+              (!selectedPropAccount || !selectedBrokerAccount)) ||
+            (slotWizardStep === 3 && !profileDraft)
+          }
         >
           <div className="space-y-5">
-            <Field label="Nome slot">
-              <input
-                className={inputClass}
-                value={slotDraft.slot}
-                onChange={(event) =>
-                  setSlotDraft((current) => ({
-                    ...current,
-                    slot: event.target.value,
-                  }))
-                }
-              />
-            </Field>
-            <Field label="Challenge prop">
-              <OptionCardGroup
-                options={challengeOptions}
-                value={slotDraft.challenge}
-                onChange={(nextValue) =>
-                  setSlotDraft((current) => ({
-                    ...current,
-                    challenge: nextValue,
-                  }))
-                }
-              />
-            </Field>
-            <div className="rounded-[16px] border border-primary/10 bg-primary/5 p-4">
-              <div className="text-sm font-medium text-white">
-                Cosa succede dopo
-              </div>
-              <div className="mt-3 space-y-2 text-sm text-zinc-400">
-                <div>1. Crei lo slot e scegli la challenge.</div>
-                <div>2. Colleghi la challenge con login, password e server.</div>
-                <div>3. Colleghi il broker con login, password e server.</div>
-                <div>4. Usi il preset consigliato e attivi la challenge.</div>
-              </div>
+            <div className="grid gap-3 sm:grid-cols-3">
+              {[
+                { step: 1, title: "Tipo conto" },
+                { step: 2, title: "Selezione conti" },
+                { step: 3, title: "Parametri trading" },
+              ].map((item) => (
+                <div
+                  key={item.step}
+                  className={`rounded-xl border px-4 py-3 text-sm transition ${
+                    slotWizardStep === item.step
+                      ? "border-primary/25 bg-primary/10 text-primary"
+                      : "border-white/8 bg-white/[0.03] text-zinc-400"
+                  }`}
+                >
+                  <div className="text-[11px] uppercase tracking-[0.14em]">
+                    Step {item.step}
+                  </div>
+                  <div className="mt-2 font-medium">{item.title}</div>
+                </div>
+              ))}
             </div>
+
+            <AnimatePresence mode="wait">
+              {slotWizardStep === 1 ? (
+                <motion.div
+                  key="wizard-step-1"
+                  initial={{ opacity: 0, x: 18 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -18 }}
+                  transition={{ duration: 0.2, ease: "easeOut" }}
+                  className="space-y-5"
+                >
+                  <Field label="Nome slot">
+                    <input
+                      className={inputClass}
+                      value={slotDraft.slot}
+                      onChange={(event) =>
+                        setSlotDraft((current) => ({
+                          ...current,
+                          slot: event.target.value,
+                        }))
+                      }
+                    />
+                  </Field>
+
+                  <Field label="Tipo di conto">
+                    <OptionCardGroup
+                      options={phaseOptions}
+                      value={slotDraft.phase}
+                      onChange={updateSlotWizardPhase}
+                    />
+                  </Field>
+
+                  <Field label="Challenge prop">
+                    <OptionCardGroup
+                      options={challengeOptions}
+                      value={slotDraft.challenge}
+                      onChange={(nextValue) =>
+                        setSlotDraft((current) => ({
+                          ...current,
+                          challenge: nextValue,
+                        }))
+                      }
+                    />
+                  </Field>
+                </motion.div>
+              ) : null}
+
+              {slotWizardStep === 2 ? (
+                <motion.div
+                  key="wizard-step-2"
+                  initial={{ opacity: 0, x: 18 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -18 }}
+                  transition={{ duration: 0.2, ease: "easeOut" }}
+                  className="space-y-5"
+                >
+                  <div className="rounded-[14px] border border-primary/10 bg-primary/5 px-4 py-3 text-sm text-zinc-300">
+                    Scegli due conti gia verificati nella sezione <span className="font-medium text-white">Conti</span>.
+                    Se non li vedi qui, prima salvali e attendi il pallino verde.
+                  </div>
+
+                  <div className="grid gap-4 lg:grid-cols-2">
+                    <div className="rounded-[16px] border border-white/8 bg-white/[0.03] p-4">
+                      <div className="text-sm font-medium text-white">Conto Prop</div>
+                      <div className="mt-4 space-y-3">
+                        {propReadyAccounts.length === 0 ? (
+                          <div className="rounded-xl border border-dashed border-white/10 px-4 py-5 text-sm text-zinc-500">
+                            Nessun conto prop connesso. Salva e valida prima un conto dalla sezione Conti.
+                          </div>
+                        ) : (
+                          propReadyAccounts.map((account) => {
+                            const active = slotDraft.propSavedAccountId === account.id;
+                            const statusMeta = getSavedAccountStatusMeta(account);
+
+                            return (
+                              <button
+                                key={account.id}
+                                type="button"
+                                onClick={() => syncWizardSelectedAccount("prop", account.id)}
+                                className={`w-full rounded-xl border px-4 py-4 text-left transition ${
+                                  active
+                                    ? "border-primary/25 bg-primary/10"
+                                    : "border-white/8 bg-white/[0.03] hover:bg-white/[0.05]"
+                                }`}
+                              >
+                                <div className="flex items-start justify-between gap-3">
+                                  <div>
+                                    <div className="text-sm font-medium text-white">{account.label}</div>
+                                    <div className="mt-1 text-xs text-zinc-500">
+                                      {account.loginMasked} · {account.server}
+                                    </div>
+                                  </div>
+                                  <div className="flex items-center gap-2 text-xs text-zinc-400">
+                                    <span className={`size-2 rounded-full ${statusMeta.dotClass}`} />
+                                    {statusMeta.label}
+                                  </div>
+                                </div>
+                              </button>
+                            );
+                          })
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="rounded-[16px] border border-white/8 bg-white/[0.03] p-4">
+                      <div className="text-sm font-medium text-white">Conto Broker</div>
+                      <div className="mt-4 space-y-3">
+                        {brokerReadyAccounts.length === 0 ? (
+                          <div className="rounded-xl border border-dashed border-white/10 px-4 py-5 text-sm text-zinc-500">
+                            Nessun conto broker connesso. Salva e valida prima un conto dalla sezione Conti.
+                          </div>
+                        ) : (
+                          brokerReadyAccounts.map((account) => {
+                            const active = slotDraft.brokerSavedAccountId === account.id;
+                            const statusMeta = getSavedAccountStatusMeta(account);
+
+                            return (
+                              <button
+                                key={account.id}
+                                type="button"
+                                onClick={() => syncWizardSelectedAccount("broker", account.id)}
+                                className={`w-full rounded-xl border px-4 py-4 text-left transition ${
+                                  active
+                                    ? "border-primary/25 bg-primary/10"
+                                    : "border-white/8 bg-white/[0.03] hover:bg-white/[0.05]"
+                                }`}
+                              >
+                                <div className="flex items-start justify-between gap-3">
+                                  <div>
+                                    <div className="text-sm font-medium text-white">{account.label}</div>
+                                    <div className="mt-1 text-xs text-zinc-500">
+                                      {account.loginMasked} · {account.server}
+                                    </div>
+                                  </div>
+                                  <div className="flex items-center gap-2 text-xs text-zinc-400">
+                                    <span className={`size-2 rounded-full ${statusMeta.dotClass}`} />
+                                    {statusMeta.label}
+                                  </div>
+                                </div>
+                              </button>
+                            );
+                          })
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </motion.div>
+              ) : null}
+
+              {slotWizardStep === 3 ? (
+                <motion.div
+                  key="wizard-step-3"
+                  initial={{ opacity: 0, x: 18 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -18 }}
+                  transition={{ duration: 0.2, ease: "easeOut" }}
+                  className="space-y-5"
+                >
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <Field label="Target Hedge ($)">
+                      <input
+                        className={inputClass}
+                        type="number"
+                        value={slotDraft.hedgeBaseTarget}
+                        onChange={(event) =>
+                          setSlotDraft((current) => ({
+                            ...current,
+                            hedgeBaseTarget: Number(event.target.value || 0),
+                            target: Number(event.target.value || 0),
+                          }))
+                        }
+                      />
+                    </Field>
+                    <Field
+                      label="Balance Broker inizio Challenge"
+                      hint="Letto da MetaApi al primo aggancio"
+                    >
+                      <input
+                        className={`${inputClass} cursor-not-allowed opacity-80`}
+                        value={
+                          brokerStartEquity > 0
+                            ? formatCurrency(brokerStartEquity)
+                            : "In attesa del primo aggancio"
+                        }
+                        readOnly
+                      />
+                    </Field>
+                  </div>
+
+                  <div className="grid gap-4 sm:grid-cols-3">
+                    <Field label="Risk per trade (%)">
+                      <input
+                        className={inputClass}
+                        type="number"
+                        step="0.1"
+                        value={profileDraft?.riskPerTrade ?? slotDraft.riskPerTrade}
+                        onChange={(event) =>
+                          setProfileDraft((current) => ({
+                            ...(current || {}),
+                            name:
+                              current?.name || getDefaultProfileNameForPhase(slotDraft.phase),
+                            riskPerTrade: Number(event.target.value || 1.5),
+                            maxDailyTrades: Number(
+                              current?.maxDailyTrades ?? slotDraft.maxDailyTrades ?? 2,
+                            ),
+                            orphanTimeoutMs: Number(
+                              current?.orphanTimeoutMs ?? slotDraft.orphanTimeoutMs ?? 1000,
+                            ),
+                          }))
+                        }
+                      />
+                    </Field>
+                    <Field label="Max daily trades">
+                      <input
+                        className={inputClass}
+                        type="number"
+                        min="1"
+                        max="2"
+                        value={profileDraft?.maxDailyTrades ?? slotDraft.maxDailyTrades}
+                        onChange={(event) =>
+                          setProfileDraft((current) => ({
+                            ...(current || {}),
+                            name:
+                              current?.name || getDefaultProfileNameForPhase(slotDraft.phase),
+                            riskPerTrade: Number(
+                              current?.riskPerTrade ?? slotDraft.riskPerTrade ?? 1.5,
+                            ),
+                            maxDailyTrades: Number(event.target.value || 2),
+                            orphanTimeoutMs: Number(
+                              current?.orphanTimeoutMs ?? slotDraft.orphanTimeoutMs ?? 1000,
+                            ),
+                          }))
+                        }
+                      />
+                    </Field>
+                    <Field label="Orphan timeout (ms)">
+                      <input
+                        className={inputClass}
+                        type="number"
+                        step="100"
+                        value={profileDraft?.orphanTimeoutMs ?? slotDraft.orphanTimeoutMs}
+                        onChange={(event) =>
+                          setProfileDraft((current) => ({
+                            ...(current || {}),
+                            name:
+                              current?.name || getDefaultProfileNameForPhase(slotDraft.phase),
+                            riskPerTrade: Number(
+                              current?.riskPerTrade ?? slotDraft.riskPerTrade ?? 1.5,
+                            ),
+                            maxDailyTrades: Number(
+                              current?.maxDailyTrades ?? slotDraft.maxDailyTrades ?? 2,
+                            ),
+                            orphanTimeoutMs: Number(event.target.value || 1000),
+                          }))
+                        }
+                      />
+                    </Field>
+                  </div>
+
+                  <div className="grid gap-4 lg:grid-cols-2">
+                    <div className="rounded-[16px] border border-white/8 bg-white/[0.03] p-4 text-sm text-zinc-300">
+                      <div className="text-xs uppercase tracking-[0.14em] text-zinc-500">
+                        Prop selezionato
+                      </div>
+                      <div className="mt-2 font-medium text-white">{selectedPropAccount?.label}</div>
+                      <div className="mt-1">{selectedPropAccount?.loginMasked} · {selectedPropAccount?.server}</div>
+                    </div>
+                    <div className="rounded-[16px] border border-white/8 bg-white/[0.03] p-4 text-sm text-zinc-300">
+                      <div className="text-xs uppercase tracking-[0.14em] text-zinc-500">
+                        Broker selezionato
+                      </div>
+                      <div className="mt-2 font-medium text-white">{selectedBrokerAccount?.label}</div>
+                      <div className="mt-1">{selectedBrokerAccount?.loginMasked} · {selectedBrokerAccount?.server}</div>
+                    </div>
+                  </div>
+                </motion.div>
+              ) : null}
+            </AnimatePresence>
           </div>
         </Drawer>
       );
@@ -3161,10 +3876,10 @@ function App() {
     if (panel.type === "slot-connections" && slotDraft) {
       const readiness = getMetaApiReadiness(slotDraft);
       const propSavedOptions = savedAccounts.filter(
-        (account) => account.accountType === "PROP",
+        (account) => account.accountType === "PROP" && isSavedAccountReady(account),
       );
       const brokerSavedOptions = savedAccounts.filter(
-        (account) => account.accountType === "BROKER",
+        (account) => account.accountType === "BROKER" && isSavedAccountReady(account),
       );
       const selectedPropSavedAccount = propSavedOptions.find(
         (account) => account.id === slotDraft.propSavedAccountId,
@@ -3198,7 +3913,7 @@ function App() {
       return (
         <Drawer
           title={`Collega conti · ${slotDraft.slot}`}
-          description="Configura i due lati dello slot. Appena login, password e server sono completi, lo slot diventa pronto per MetaApi."
+          description="Qui scegli solo conti gia validati nella sezione Conti. La connessione MetaApi non si fa piu dentro lo slot."
           onClose={closePanel}
           onSave={saveSlotConnections}
           saveLabel="Salva connessioni"
@@ -3212,8 +3927,8 @@ function App() {
             </div>
 
             <div className="rounded-[14px] border border-primary/10 bg-primary/5 px-4 py-3 text-sm text-zinc-300">
-              Se hai gia salvato i conti, puoi lasciare vuoti login, password e server:
-              <span className="font-medium text-white"> il backend manterra le credenziali gia cifrate</span>.
+              Prima validi i conti in <span className="font-medium text-white">Conti</span>, poi li assegni allo slot da qui.
+              Dentro questo pannello puoi usare solo conti con <span className="font-medium text-white">pallino verde</span>.
             </div>
 
             <div className="rounded-[16px] border border-white/8 bg-white/[0.03] p-4">
@@ -3267,75 +3982,18 @@ function App() {
                       {selectedPropSavedAccount.server}
                     </div>
                   ) : null}
-                  <div>
-                    <div className="mb-2 text-xs uppercase tracking-[0.12em] text-muted-foreground">
-                      Piattaforma
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <div className="rounded-lg border border-white/8 bg-white/[0.03] px-3 py-3 text-sm">
+                      <div className="text-xs uppercase tracking-[0.12em] text-zinc-500">Piattaforma</div>
+                      <div className="mt-2 text-white">{String(slotDraft.propPlatform || "mt5").toUpperCase()}</div>
                     </div>
-                    <OptionCardGroup
-                      options={platformOptions}
-                      value={slotDraft.propPlatform || "mt5"}
-                      onChange={(nextValue) =>
-                        setSlotDraft((current) => ({
-                          ...current,
-                          propPlatform: nextValue,
-                        }))
-                      }
-                      columns="grid-cols-2"
-                    />
-                  </div>
-                  <Field label="Login challenge" hint="Vuoto = mantieni salvato">
-                    <input
-                      className={inputClass}
-                      value={displayedPropLogin}
-                      readOnly={propImportedReadOnly}
-                      placeholder={
-                        getDisplayedMaskedLogin(slotDraft, "prop") ||
-                        (slotDraft.propConnected ? "Gia salvato sul server" : "")
-                      }
-                      onChange={(event) =>
-                        setSlotDraft((current) => ({
-                          ...current,
-                          propLogin: event.target.value,
-                        }))
-                      }
-                    />
-                  </Field>
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <Field label="Password challenge" hint="Vuoto = mantieni salvato">
-                      <input
-                        className={inputClass}
-                        type="password"
-                        value={
-                          slotDraft.propPassword ||
-                          (propImportedReadOnly ? "••••••••" : "")
-                        }
-                        readOnly={propImportedReadOnly}
-                        placeholder={slotDraft.propConnected ? "Gia salvata sul server" : ""}
-                        onChange={(event) =>
-                          setSlotDraft((current) => ({
-                            ...current,
-                            propPassword: event.target.value,
-                          }))
-                        }
-                      />
-                    </Field>
-                    <Field label="Server challenge" hint="Vuoto = mantieni salvato">
-                      <input
-                        className={inputClass}
-                        value={displayedPropServer}
-                        readOnly={propImportedReadOnly}
-                        placeholder={
-                          getDisplayedServerHint(slotDraft, "prop") ||
-                          (slotDraft.propConnected ? "Gia salvato sul server" : "")
-                        }
-                        onChange={(event) =>
-                          setSlotDraft((current) => ({
-                            ...current,
-                            propServer: event.target.value,
-                          }))
-                        }
-                      />
-                    </Field>
+                    <div className="rounded-lg border border-white/8 bg-white/[0.03] px-3 py-3 text-sm">
+                      <div className="text-xs uppercase tracking-[0.12em] text-zinc-500">Stato connessione</div>
+                      <div className="mt-2 flex items-center gap-2 text-white">
+                        <span className={`size-2 rounded-full ${selectedPropSavedAccount ? getSavedAccountStatusMeta(selectedPropSavedAccount).dotClass : "bg-zinc-500"}`} />
+                        {selectedPropSavedAccount ? getSavedAccountStatusMeta(selectedPropSavedAccount).label : "Non selezionato"}
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -3371,88 +4029,31 @@ function App() {
                       {selectedBrokerSavedAccount.server}
                     </div>
                   ) : null}
-                  <div>
-                    <div className="mb-2 text-xs uppercase tracking-[0.12em] text-muted-foreground">
-                      Piattaforma
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <div className="rounded-lg border border-white/8 bg-white/[0.03] px-3 py-3 text-sm">
+                      <div className="text-xs uppercase tracking-[0.12em] text-zinc-500">Piattaforma</div>
+                      <div className="mt-2 text-white">{String(slotDraft.brokerPlatform || "mt5").toUpperCase()}</div>
                     </div>
-                    <OptionCardGroup
-                      options={platformOptions}
-                      value={slotDraft.brokerPlatform || "mt5"}
-                      onChange={(nextValue) =>
-                        setSlotDraft((current) => ({
-                          ...current,
-                          brokerPlatform: nextValue,
-                        }))
-                      }
-                      columns="grid-cols-2"
-                    />
+                    <div className="rounded-lg border border-white/8 bg-white/[0.03] px-3 py-3 text-sm">
+                      <div className="text-xs uppercase tracking-[0.12em] text-zinc-500">Stato connessione</div>
+                      <div className="mt-2 flex items-center gap-2 text-white">
+                        <span className={`size-2 rounded-full ${selectedBrokerSavedAccount ? getSavedAccountStatusMeta(selectedBrokerSavedAccount).dotClass : "bg-zinc-500"}`} />
+                        {selectedBrokerSavedAccount ? getSavedAccountStatusMeta(selectedBrokerSavedAccount).label : "Non selezionato"}
+                      </div>
+                    </div>
                   </div>
-                  <Field label="Login broker" hint="Vuoto = mantieni salvato">
-                    <input
-                      className={inputClass}
-                      value={displayedBrokerLogin}
-                      readOnly={brokerImportedReadOnly}
-                      placeholder={
-                        getDisplayedMaskedLogin(slotDraft, "broker") ||
-                        (slotDraft.brokerConnected ? "Gia salvato sul server" : "")
-                      }
-                      onChange={(event) =>
-                        setSlotDraft((current) => ({
-                          ...current,
-                          brokerLogin: event.target.value,
-                        }))
-                      }
-                    />
-                  </Field>
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <Field label="Password broker" hint="Vuoto = mantieni salvato">
-                      <input
-                        className={inputClass}
-                        type="password"
-                        value={
-                          slotDraft.brokerPassword ||
-                          (brokerImportedReadOnly ? "••••••••" : "")
-                        }
-                        readOnly={brokerImportedReadOnly}
-                        placeholder={slotDraft.brokerConnected ? "Gia salvata sul server" : ""}
-                        onChange={(event) =>
-                          setSlotDraft((current) => ({
-                            ...current,
-                            brokerPassword: event.target.value,
-                          }))
-                        }
-                      />
-                    </Field>
-                    <Field label="Server broker" hint="Vuoto = mantieni salvato">
-                      <input
-                        className={inputClass}
-                        value={displayedBrokerServer}
-                        readOnly={brokerImportedReadOnly}
-                        placeholder={
-                          getDisplayedServerHint(slotDraft, "broker") ||
-                          (slotDraft.brokerConnected ? "Gia salvato sul server" : "")
-                        }
-                        onChange={(event) =>
-                          setSlotDraft((current) => ({
-                            ...current,
-                            brokerServer: event.target.value,
-                          }))
-                        }
-                      />
-                    </Field>
+                  <div className="rounded-lg border border-white/8 bg-white/[0.03] px-3 py-3 text-sm text-zinc-300">
+                    <div className="text-xs uppercase tracking-[0.12em] text-zinc-500">Balance iniziale broker</div>
+                    <div className="mt-2 text-white">
+                      {selectedBrokerSavedAccount
+                        ? formatLiveCurrencyValue(
+                            selectedBrokerSavedAccount.equity ??
+                              selectedBrokerSavedAccount.balance,
+                            "In attesa",
+                          )
+                        : "Seleziona un conto broker"}
+                    </div>
                   </div>
-                  <Field label="Nome broker">
-                    <input
-                      className={inputClass}
-                      value={slotDraft.brokerAccount}
-                      onChange={(event) =>
-                        setSlotDraft((current) => ({
-                          ...current,
-                          brokerAccount: event.target.value,
-                        }))
-                      }
-                    />
-                  </Field>
                 </div>
               </div>
             </div>
@@ -3466,15 +4067,17 @@ function App() {
       return (
         <Drawer
           title="Salva conto"
-          description="Archivia un conto prop o broker nella libreria. Dopo potrai importarlo negli slot con un menu a tendina."
+          description="Qui il conto viene validato subito con MetaApi. Se la connessione riesce, comparirà con pallino verde nella sezione Conti."
           onClose={closePanel}
           onSave={saveSavedAccount}
           saveLabel="Salva conto"
+          saveLoading={savingSavedAccountType === savedAccountDraft.accountType}
           saveDisabled={missingFields.length > 0}
+          savePendingLabel="Validazione in corso..."
           footerHint={
             missingFields.length > 0
               ? `Completa prima: ${missingFields.join(", ")}.`
-              : "Il conto verra salvato nel backend e riutilizzato negli slot."
+              : "Il conto verra salvato, validato e reso disponibile per gli slot."
           }
           maxWidthClass="max-w-[720px]"
         >
@@ -3677,18 +4280,17 @@ function App() {
             <div className="grid gap-4 sm:grid-cols-2">
               <Field
                 label="Valore broker a inizio challenge ($)"
-                hint="Base del controllo 30%"
+                hint="Letto da MetaApi al primo aggancio"
               >
                 <input
-                  className={inputClass}
-                  type="number"
-                  value={slotDraft.brokerStartEquity}
-                  onChange={(event) =>
-                    setSlotDraft((current) => ({
-                      ...current,
-                      brokerStartEquity: Number(event.target.value),
-                    }))
+                  className={`${inputClass} cursor-not-allowed opacity-80`}
+                  type="text"
+                  value={
+                    Number(slotDraft.brokerStartEquity || 0) > 0
+                      ? formatCurrency(Number(slotDraft.brokerStartEquity))
+                      : "In attesa del primo aggancio"
                   }
+                  readOnly
                 />
               </Field>
               <Field
@@ -4792,6 +5394,7 @@ function App() {
 
   const isOverview = activeSection === "Panoramica";
   const isPerformance = activeSection === "Performance";
+  const isCyclesHistory = activeSection === "Cicli";
   const isAccountsLibrary = activeSection === "Conti";
   const isStrategyGuide = activeSection === "Guida strategia";
   const isPlatformGuide = activeSection === "Guida piattaforma";
@@ -4908,6 +5511,8 @@ function App() {
                 <div className="mt-1 text-2xl font-semibold text-foreground">
                   {isPerformance
                     ? "Performance dei cicli"
+                    : isCyclesHistory
+                    ? "Storico dei cicli conclusi"
                     : isAccountsLibrary
                     ? "Libreria conti salvati"
                     : isStrategyGuide
@@ -4961,6 +5566,7 @@ function App() {
                 <Button
                   size="icon"
                   className={`size-11 ${primaryButtonClass}`}
+                  disabled={isAccountsLibrary && !subscription.canManageAccounts}
                   onClick={() =>
                     isAccountsLibrary ? openSavedAccountPanel("PROP") : openAddSlot()
                   }
@@ -5176,6 +5782,149 @@ function App() {
                   </CardContent>
                 </Card>
               </>
+            ) : isCyclesHistory ? (
+              <>
+                <div className="grid gap-3 md:grid-cols-3">
+                  {[
+                    {
+                      label: "Cicli conclusi",
+                      value: String(closedCycleLogs.length),
+                      note: "Storico finale di slot passati o falliti",
+                    },
+                    {
+                      label: "Passed",
+                      value: String(
+                        closedCycleLogs.filter((cycle) =>
+                          String(cycle.outcome || "").startsWith("PASS_"),
+                        ).length,
+                      ),
+                      note: "Slot che hanno raggiunto il target della fase",
+                    },
+                    {
+                      label: "Failed",
+                      value: String(
+                        closedCycleLogs.filter((cycle) =>
+                          String(cycle.outcome || "").startsWith("FAIL_"),
+                        ).length,
+                      ),
+                      note: "Slot liberati subito dopo violazione del drawdown",
+                    },
+                  ].map((card) => (
+                    <CompactSummaryCard
+                      key={card.label}
+                      label={card.label}
+                      value={card.value}
+                      note={card.note}
+                    />
+                  ))}
+                </div>
+
+                <Card className={`overflow-hidden ${panelClass}`}>
+                  <CardHeader className="border-b border-border/80 pb-5">
+                    <CardTitle className="text-2xl tracking-tight text-foreground">
+                      Storico cicli conclusi
+                    </CardTitle>
+                    <CardDescription className="text-muted-foreground">
+                      Qui non c'è più la dashboard generica: ogni card rappresenta un ciclo concluso con esito finale e risultato economico registrato.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="p-6">
+                    {closedCycleLogs.length === 0 ? (
+                      <div className="rounded-xl border border-dashed border-white/10 bg-white/[0.02] px-5 py-10 text-center">
+                        <div className="text-lg font-medium text-white">
+                          Nessun ciclo concluso ancora
+                        </div>
+                        <div className="mt-2 text-sm text-zinc-500">
+                          Appena una fase termina come PASSED o FAILED, la troverai qui come card fissa di storico.
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                        {closedCycleLogs.map((cycle, index) => {
+                          const outcomeMeta = {
+                            label: getCycleOutcomeLabel(cycle.outcome),
+                            className: getCycleOutcomeBadgeClass(cycle.outcome),
+                            isPassed: String(cycle.outcome || "").startsWith("PASS_"),
+                          };
+
+                          return (
+                            <motion.div
+                              key={cycle.id}
+                              initial={{ opacity: 0, y: 16 }}
+                              whileInView={{ opacity: 1, y: 0 }}
+                              viewport={{ once: true, amount: 0.3 }}
+                              transition={{ delay: index * 0.04, duration: 0.24 }}
+                              className="rounded-xl border border-white/8 bg-[linear-gradient(180deg,rgba(255,255,255,0.035),rgba(255,255,255,0.02))] p-4 shadow-[0_16px_34px_rgba(0,0,0,0.22),inset_0_1px_0_rgba(255,255,255,0.02)]"
+                            >
+                              <div className="flex items-start justify-between gap-3">
+                                <div>
+                                  <div className="text-xs uppercase tracking-[0.14em] text-zinc-500">
+                                    {cycle.slot}
+                                  </div>
+                                  <div className="mt-2 text-lg font-semibold text-white">
+                                    {outcomeMeta.label}
+                                  </div>
+                                </div>
+                                <motion.div
+                                  initial={{ opacity: 0, scale: 0.85 }}
+                                  whileInView={{ opacity: 1, scale: 1 }}
+                                  viewport={{ once: true, amount: 0.3 }}
+                                  transition={{ delay: 0.12, duration: 0.2 }}
+                                  className={`flex size-10 items-center justify-center rounded-full border ${outcomeMeta.className}`}
+                                >
+                                  {outcomeMeta.isPassed ? (
+                                    <Check className="size-4" />
+                                  ) : (
+                                    <X className="size-4" />
+                                  )}
+                                </motion.div>
+                              </div>
+
+                              <div className="mt-4 grid gap-3 text-sm">
+                                <div className="rounded-lg border border-white/8 bg-white/[0.03] px-3 py-3">
+                                  <div className="text-xs uppercase tracking-[0.12em] text-zinc-500">
+                                    Netto finale
+                                  </div>
+                                  <div
+                                    className={`mt-2 text-base font-semibold ${
+                                      Number(cycle.netProfit || 0) >= 0
+                                        ? "text-emerald-300"
+                                        : "text-rose-300"
+                                    }`}
+                                  >
+                                    {formatSignedCurrency(cycle.netProfit)}
+                                  </div>
+                                </div>
+                                <div className="grid gap-3 sm:grid-cols-2">
+                                  <div className="rounded-lg border border-white/8 bg-white/[0.03] px-3 py-3">
+                                    <div className="text-xs uppercase tracking-[0.12em] text-zinc-500">
+                                      Profitto broker
+                                    </div>
+                                    <div className="mt-2 text-zinc-200">
+                                      {formatSignedCurrency(cycle.brokerRealizedProfit)}
+                                    </div>
+                                  </div>
+                                  <div className="rounded-lg border border-white/8 bg-white/[0.03] px-3 py-3">
+                                    <div className="text-xs uppercase tracking-[0.12em] text-zinc-500">
+                                      Costo prop
+                                    </div>
+                                    <div className="mt-2 text-zinc-200">
+                                      {formatCurrency(cycle.propCost)}
+                                    </div>
+                                  </div>
+                                </div>
+                                <div className="rounded-lg border border-white/8 bg-white/[0.03] px-3 py-3 text-zinc-400">
+                                  Chiuso il {formatDateTime(cycle.closedAt)}
+                                </div>
+                              </div>
+                            </motion.div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </>
             ) : isAccountsLibrary ? (
               <>
                 <div className="grid gap-3 md:grid-cols-3">
@@ -5205,6 +5954,7 @@ function App() {
                           type="button"
                           variant="outline"
                           className={secondaryButtonClass}
+                          disabled={!subscription.canManageAccounts}
                           onClick={() => openSavedAccountPanel("PROP")}
                         >
                           Nuovo prop
@@ -5212,6 +5962,7 @@ function App() {
                         <Button
                           type="button"
                           className={primaryButtonClass}
+                          disabled={!subscription.canManageAccounts}
                           onClick={() => openSavedAccountPanel("BROKER")}
                         >
                           Nuovo broker
@@ -5226,13 +5977,16 @@ function App() {
                           Nessun conto salvato
                         </div>
                         <div className="mt-2 text-sm text-zinc-500">
-                          Inizia da qui: salva un conto prop o broker e poi importalo direttamente negli slot.
+                          {subscription.canManageAccounts
+                            ? "Inizia da qui: salva un conto prop o broker e poi importalo direttamente negli slot."
+                            : "Per collegare nuovi conti ti serve almeno uno slot pagato e disponibile nel tuo abbonamento."}
                         </div>
                         <div className="mt-5 flex flex-wrap justify-center gap-3">
                           <Button
                             type="button"
                             variant="outline"
                             className={secondaryButtonClass}
+                            disabled={!subscription.canManageAccounts}
                             onClick={() => openSavedAccountPanel("PROP")}
                           >
                             Salva conto prop
@@ -5240,6 +5994,7 @@ function App() {
                           <Button
                             type="button"
                             className={primaryButtonClass}
+                            disabled={!subscription.canManageAccounts}
                             onClick={() => openSavedAccountPanel("BROKER")}
                           >
                             Salva conto broker
@@ -5249,8 +6004,12 @@ function App() {
                     ) : (
                       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
                         {filteredSavedAccounts.map((account) => (
-                          <div
+                          <motion.div
                             key={account.id}
+                            initial={{ opacity: 0, y: 14 }}
+                            whileInView={{ opacity: 1, y: 0 }}
+                            viewport={{ once: true, amount: 0.2 }}
+                            transition={{ duration: 0.22 }}
                             className="rounded-xl border border-white/8 bg-[linear-gradient(180deg,rgba(255,255,255,0.035),rgba(255,255,255,0.02))] p-4 shadow-[0_16px_34px_rgba(0,0,0,0.22),inset_0_1px_0_rgba(255,255,255,0.02)]"
                           >
                             <div className="flex items-start justify-between gap-3">
@@ -5262,9 +6021,17 @@ function App() {
                                   {account.label}
                                 </div>
                               </div>
-                              <Badge className="border-primary/16 bg-primary/8 text-primary hover:bg-primary/8">
-                                {String(account.platform).toUpperCase()}
-                              </Badge>
+                              <div className="flex flex-col items-end gap-2">
+                                <Badge className="border-primary/16 bg-primary/8 text-primary hover:bg-primary/8">
+                                  {String(account.platform).toUpperCase()}
+                                </Badge>
+                                <div className="flex items-center gap-2 text-xs text-zinc-400">
+                                  <span
+                                    className={`size-2 rounded-full ${getSavedAccountStatusMeta(account).dotClass}`}
+                                  />
+                                  {getSavedAccountStatusMeta(account).label}
+                                </div>
+                              </div>
                             </div>
 
                             <div className="mt-4 grid gap-3 text-sm">
@@ -5298,8 +6065,16 @@ function App() {
                                   </div>
                                 </div>
                               ) : null}
+                              <div className="rounded-lg border border-white/8 bg-white/[0.03] px-3 py-3">
+                                <div className="text-xs uppercase tracking-[0.12em] text-zinc-500">
+                                  Stato validazione
+                                </div>
+                                <div className="mt-2 text-zinc-200">
+                                  {getSavedAccountStatusMeta(account).note}
+                                </div>
+                              </div>
                             </div>
-                          </div>
+                          </motion.div>
                         ))}
                       </div>
                     )}
@@ -5632,6 +6407,10 @@ function App() {
                         const brokerConnected = hasBrokerConnection(slot);
                         const propConnectionState = getSlotSideConnectionState(slot, "prop");
                         const brokerConnectionState = getSlotSideConnectionState(slot, "broker");
+                        const cycleStateMeta = getCycleStateMeta(
+                          slot.cycleState,
+                          slot.challengeState,
+                        );
                         const slotReady =
                           propConnected &&
                           brokerConnected &&
@@ -5661,6 +6440,21 @@ function App() {
                             }`}
                           >
                             <div className="absolute right-3 top-3 z-10 flex items-center gap-2">
+                                {cycleStateMeta ? (
+                                  <motion.div
+                                    initial={{ opacity: 0, scale: 0.85 }}
+                                    animate={{ opacity: 1, scale: 1 }}
+                                    transition={{ duration: 0.2 }}
+                                    className={`inline-flex items-center gap-1 rounded-full border px-2 py-1 text-[11px] font-medium ${cycleStateMeta.className}`}
+                                  >
+                                    {cycleStateMeta.icon === "check" ? (
+                                      <Check className="size-3.5" />
+                                    ) : (
+                                      <X className="size-3.5" />
+                                    )}
+                                    {cycleStateMeta.label}
+                                  </motion.div>
+                                ) : null}
                                 <SlotPowerSwitch
                                   checked={slot.challengeState === "ATTIVA"}
                                   title={
