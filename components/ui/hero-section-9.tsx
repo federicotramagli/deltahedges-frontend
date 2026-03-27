@@ -3,7 +3,7 @@ import { ArrowRight, ChevronRight, Menu, X } from "lucide-react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 
-import dashboardPreview from "../../Screenshot 2026-03-26 alle 18.14.53.png";
+import dashboardPreview from "../../Screenshot 2026-03-27 alle 11.14.07.png";
 import { AnimatedGroup } from "@/components/motion-primitives/animated-group";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
