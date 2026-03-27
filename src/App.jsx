@@ -16,6 +16,7 @@ import {
   Search,
   Settings,
   SlidersHorizontal,
+  Trash2,
   Wallet,
   Webhook,
   X,
@@ -246,6 +247,7 @@ const secondaryButtonClass =
 
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL?.replace(/\/+$/, "");
 const localStateStorageKey = "deltahedge.local-dashboard-state.v1";
+const adminDashboardEmails = new Set(["trafede123@gmail.com"]);
 
 if (!apiBaseUrl) {
   throw new Error("Manca VITE_API_BASE_URL");
@@ -1811,6 +1813,8 @@ function App() {
   const [testingSlotId, setTestingSlotId] = useState(null);
   const [savingConnectionsSlotId, setSavingConnectionsSlotId] = useState(null);
   const [savingSavedAccountType, setSavingSavedAccountType] = useState(null);
+  const [deletingSavedAccountId, setDeletingSavedAccountId] = useState(null);
+  const [deletingSlotId, setDeletingSlotId] = useState(null);
   const slotsRef = useRef(initialSlots);
   const connectionMonitorRef = useRef(new Map());
   const [selectedSlotId, setSelectedSlotId] = useState(initialSlots[0]?.id ?? null);
@@ -1833,6 +1837,10 @@ function App() {
     slotsRef.current = slots;
   }, [slots]);
 
+  const isDashboardAdmin = adminDashboardEmails.has(
+    user?.email?.trim().toLowerCase() || "",
+  );
+
   function pushNotification(title, body) {
     setNotifications((current) => [
       {
@@ -1852,6 +1860,82 @@ function App() {
         "Errore logout",
         error instanceof Error ? error.message : "Impossibile chiudere la sessione.",
       );
+    }
+  }
+
+  async function deleteSavedAccount(account) {
+    if (!isDashboardAdmin) return;
+
+    const confirmed = window.confirm(
+      `Vuoi davvero eliminare il conto "${account.label}" dalla libreria?`,
+    );
+    if (!confirmed) return;
+
+    try {
+      setDeletingSavedAccountId(account.id);
+      await apiRequest(`/accounts-library/${account.id}`, {
+        method: "DELETE",
+      });
+      await loadDashboardData();
+      setSlotDraft((current) => {
+        if (!current) return current;
+        return {
+          ...current,
+          propSavedAccountId:
+            current.propSavedAccountId === account.id
+              ? null
+              : current.propSavedAccountId,
+          brokerSavedAccountId:
+            current.brokerSavedAccountId === account.id
+              ? null
+              : current.brokerSavedAccountId,
+        };
+      });
+      pushNotification(
+        "Conto eliminato",
+        `${account.label} e stato rimosso dalla libreria conti.`,
+      );
+    } catch (error) {
+      console.error("[DeltaHedge] delete saved account failed", error);
+      pushNotification(
+        "Errore elimina conto",
+        error instanceof Error ? error.message : "Eliminazione conto non riuscita.",
+      );
+    } finally {
+      setDeletingSavedAccountId(null);
+    }
+  }
+
+  async function deleteSlotCard(slot) {
+    if (!isDashboardAdmin) return;
+
+    const confirmed = window.confirm(
+      `Vuoi davvero eliminare la card "${slot.slot}"? Se il ciclo e ancora aperto, prima va chiuso.`,
+    );
+    if (!confirmed) return;
+
+    try {
+      setDeletingSlotId(slot.id);
+      await apiRequest(`/slots/${slot.id}`, {
+        method: "DELETE",
+      });
+      await loadDashboardData();
+      setSelectedSlotId((current) => (current === slot.id ? null : current));
+      if (panel.source === slot.id) {
+        closePanel();
+      }
+      pushNotification(
+        "Slot eliminato",
+        `${slot.slot} e stata rimossa dalla dashboard.`,
+      );
+    } catch (error) {
+      console.error("[DeltaHedge] delete slot failed", error);
+      pushNotification(
+        "Errore elimina slot",
+        error instanceof Error ? error.message : "Eliminazione slot non riuscita.",
+      );
+    } finally {
+      setDeletingSlotId(null);
     }
   }
 
@@ -6017,14 +6101,29 @@ function App() {
                                 <div className="text-xs uppercase tracking-[0.14em] text-zinc-500">
                                   {account.accountType === "PROP" ? "Prop" : "Broker"}
                                 </div>
-                                <div className="mt-1 text-lg font-semibold text-white">
+                              <div className="mt-1 text-lg font-semibold text-white">
                                   {account.label}
                                 </div>
                               </div>
                               <div className="flex flex-col items-end gap-2">
-                                <Badge className="border-primary/16 bg-primary/8 text-primary hover:bg-primary/8">
-                                  {String(account.platform).toUpperCase()}
-                                </Badge>
+                                <div className="flex items-center gap-2">
+                                  <Badge className="border-primary/16 bg-primary/8 text-primary hover:bg-primary/8">
+                                    {String(account.platform).toUpperCase()}
+                                  </Badge>
+                                  {isDashboardAdmin ? (
+                                    <Button
+                                      type="button"
+                                      variant="outline"
+                                      className={`h-8 w-8 p-0 ${secondaryButtonClass}`}
+                                      disabled={deletingSavedAccountId === account.id}
+                                      onClick={() => {
+                                        void deleteSavedAccount(account);
+                                      }}
+                                    >
+                                      <Trash2 className="size-3.5" />
+                                    </Button>
+                                  ) : null}
+                                </div>
                                 <div className="flex items-center gap-2 text-xs text-zinc-400">
                                   <span
                                     className={`size-2 rounded-full ${getSavedAccountStatusMeta(account).dotClass}`}
@@ -6478,6 +6577,20 @@ function App() {
                                 >
                                   <Settings className="size-4" />
                                 </Button>
+                                {isDashboardAdmin ? (
+                                  <Button
+                                    type="button"
+                                    variant="outline"
+                                    className={`h-9 w-9 p-0 ${secondaryButtonClass}`}
+                                    disabled={deletingSlotId === slot.id}
+                                    onClick={(event) => {
+                                      event.stopPropagation();
+                                      void deleteSlotCard(slot);
+                                    }}
+                                  >
+                                    <Trash2 className="size-4" />
+                                  </Button>
+                                ) : null}
                                 <ChallengeStateBadge value={slot.challengeState} />
                             </div>
 
