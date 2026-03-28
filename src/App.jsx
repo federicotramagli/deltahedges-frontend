@@ -5471,7 +5471,9 @@ function App() {
               </div>
             ) : (
               <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                {stripePlans.map((plan) => (
+                {stripePlans
+                  .filter((plan) => !plan.isTest || isDashboardAdmin)
+                  .map((plan) => (
                   <div
                     key={plan.id}
                     className={`brand-surface-soft rounded-[22px] border px-5 py-5 ${
@@ -5508,6 +5510,9 @@ function App() {
                       <div>• {plan.seatCount} slot cloud riservati al tuo utente</div>
                       <div>• Uso di conti salvati e wizard coppie sbloccato</div>
                       <div>• Revoca automatica se il billing si interrompe</div>
+                      {plan.isTest ? (
+                        <div>• Piano interno di verifica, visibile solo all&apos;admin</div>
+                      ) : null}
                     </div>
 
                     <Button
