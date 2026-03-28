@@ -2638,7 +2638,7 @@ function App() {
   }
 
   function openAddSlot() {
-    if (!isDashboardAdmin && !(Number(subscription.availableSlots || 0) > 0)) {
+    if (!(Number(subscription.availableSlots || 0) > 0)) {
       void openBillingOffersPanel();
       return;
     }
@@ -5447,6 +5447,27 @@ function App() {
               Con ogni pacchetto sblocchi slot reali nel tuo account. Se il pagamento fallisce o l'abbonamento viene cancellato,
               gli slot vengono revocati e le connessioni MetaApi collegate vengono smontate in automatico.
             </div>
+
+            {isDashboardAdmin ? (
+              <div className="flex flex-wrap items-center justify-between gap-3 rounded-[16px] border border-white/8 bg-white/[0.03] px-4 py-4 text-sm text-zinc-300">
+                <div>
+                  Sei in modalita admin. Puoi testare anche il wizard senza acquistare un piano.
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className={secondaryButtonClass}
+                  onClick={() => {
+                    setSlotDraft(createEmptySlot(slots.length + 1, "", slots));
+                    setSlotWizardStep(1);
+                    setSlotWizardError(null);
+                    openPanel("add-slot");
+                  }}
+                >
+                  Apri wizard admin
+                </Button>
+              </div>
+            ) : null}
 
             {stripePlansError ? (
               <div className="rounded-[14px] border border-rose-500/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-100">
