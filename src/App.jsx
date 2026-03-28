@@ -3109,15 +3109,24 @@ function App() {
   }
 
   useEffect(() => {
-    if (slots.length === 0) return undefined;
+    const shouldPollLiveMetrics =
+      activeSection === "Panoramica" || panel.type === "slot-detail";
+
+    if (!shouldPollLiveMetrics || slots.length === 0) return undefined;
 
     let cancelled = false;
 
     const pollLiveMetrics = async () => {
+      if (document.visibilityState === "hidden") {
+        return;
+      }
+
       const candidates = slotsRef.current.filter(
         (slot) =>
-          (slot.propMetaApiAccountId && slot.brokerMetaApiAccountId) ||
-          (hasPropConnection(slot) && hasBrokerConnection(slot)),
+          slot.challengeState === "ATTIVA" &&
+          ((slot.propMetaApiAccountId && slot.brokerMetaApiAccountId) ||
+            hasPropConnection(slot) &&
+            hasBrokerConnection(slot)),
       );
 
       await Promise.all(
@@ -3137,13 +3146,13 @@ function App() {
     void pollLiveMetrics();
     const intervalId = window.setInterval(() => {
       void pollLiveMetrics();
-    }, 4000);
+    }, 15000);
 
     return () => {
       cancelled = true;
       window.clearInterval(intervalId);
     };
-  }, [slots.length]);
+  }, [slots.length, activeSection, panel.type]);
 
   useEffect(() => {
     if (panel.type !== "slot-detail" || !slotDraft?.id) return;
