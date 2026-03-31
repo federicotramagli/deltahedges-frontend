@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils";
 
 const menuItems = [
   { name: "Come funziona", href: "#come-funziona" },
+  { name: "Analytics", href: "#performance-analytics" },
   { name: "Prezzi", href: "#pricing" },
   { name: "About", href: "#perche-deltahedge" },
 ];
@@ -421,12 +422,25 @@ function HeroHeader() {
 function Logo({ className }: { className?: string }) {
   return (
     <div className={cn("flex items-center gap-3", className)}>
-      <div className="brand-pill flex size-9 items-center justify-center rounded-xl text-sm font-semibold tracking-[0.35em] text-white">
-        DH
-      </div>
+      <svg
+        viewBox="0 0 84 84"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+        className="size-11 shrink-0 text-primary drop-shadow-[0_0_24px_rgba(123,137,255,0.2)]"
+      >
+        <path
+          d="M42 8L10 68H29.5L42 45L54.5 68H74L42 8Z"
+          fill="currentColor"
+        />
+        <path d="M28 68L53 18L64 18L39 68H28Z" fill="#080A03" />
+        <path d="M44 58L61 29L66 34L49 63L44 58Z" fill="currentColor" />
+      </svg>
       <div className="flex flex-col">
-        <span className="brand-gradient-text text-sm font-semibold tracking-[0.35em]">DELTAHEDGE</span>
-        <span className="text-xs text-zinc-500">Premium Pair Execution</span>
+        <div className="flex items-baseline text-[22px] font-black uppercase tracking-[-0.05em]">
+          <span className="brand-gradient-text">Delta</span>
+          <span className="text-foreground">Hedge</span>
+        </div>
+        <span className="text-xs text-zinc-500">Motore cicli prop</span>
       </div>
     </div>
   );
