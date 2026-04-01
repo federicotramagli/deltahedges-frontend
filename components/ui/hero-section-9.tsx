@@ -9,9 +9,10 @@ import { cn } from "@/lib/utils";
 
 const menuItems = [
   { name: "Come funziona", href: "#come-funziona" },
+  { name: "Scenari", href: "#scenari" },
+  { name: "Calcolatore", href: "#calcolatore" },
   { name: "Analytics", href: "#performance-analytics" },
   { name: "Prezzi", href: "#pricing" },
-  { name: "About", href: "#perche-deltahedge" },
 ];
 
 const fadeUp = {
