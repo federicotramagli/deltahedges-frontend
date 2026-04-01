@@ -18,6 +18,7 @@ import {
   Workflow,
 } from "lucide-react";
 import { Link } from "react-router-dom";
+import dashboardLaptopPreview from "../../Screenshot 2026-03-27 alle 11.14.07.png";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { HeroSection } from "@/components/ui/hero-section-9";
@@ -137,45 +138,6 @@ const analyticsHighlights = [
   },
 ];
 
-const analyticsCycles = [
-  {
-    slot: "Slot 07",
-    outcome: "FAIL FASE 1",
-    brokerRealized: "+$1,340",
-    propCost: "$289",
-    net: "+$1,051",
-  },
-  {
-    slot: "Slot 04",
-    outcome: "FAIL FASE 2",
-    brokerRealized: "+$1,709",
-    propCost: "$549",
-    net: "+$1,160",
-  },
-  {
-    slot: "Slot 11",
-    outcome: "FAIL FUNDED",
-    brokerRealized: "+$980",
-    propCost: "$289",
-    net: "+$691",
-  },
-  {
-    slot: "Slot 03",
-    outcome: "FAIL FASE 1",
-    brokerRealized: "+$1,120",
-    propCost: "$199",
-    net: "+$921",
-  },
-];
-
-const analyticsCurveValues = [0, 620, 1280, 2140, 1760, 3090, 3880, 5220, 6480, 8420];
-
-const analyticsSnapshots = [
-  { label: "Ultimi 7 giorni", value: "+$2,190", note: "3 cicli archiviati" },
-  { label: "Media per ciclo", value: "+$468", note: "Netto dopo costo prop" },
-  { label: "Stato payout", value: "2 in review", note: "Monitorati in dashboard" },
-];
-
 const scenarioCards = [
   {
     eyebrow: "Scenario fail",
@@ -230,15 +192,6 @@ const scenarioCards = [
   },
 ];
 
-const desktopPreviewNav = [
-  "Panoramica",
-  "Performance",
-  "Cicli",
-  "Conti",
-  "Trade",
-  "Webhook",
-];
-
 function parseNumericInput(value: string, fallback: number) {
   const parsed = Number.parseFloat(value);
   return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
@@ -253,304 +206,77 @@ function formatSignedUsd(value: number) {
   return `${sign}${formatUsd(Math.abs(value))}`;
 }
 
-function buildAnalyticsCurvePath(
-  values: number[],
-  width = 560,
-  height = 180,
-  paddingX = 18,
-  paddingY = 14,
-) {
-  if (values.length < 2) return "";
-
-  const maxValue = Math.max(...values);
-  const minValue = Math.min(...values);
-  const range = Math.max(maxValue - minValue, 1);
-
-  return values
-    .map((value, index) => {
-      const x =
-        paddingX +
-        (index / (values.length - 1)) * (width - paddingX * 2);
-      const y =
-        height -
-        paddingY -
-        ((value - minValue) / range) * (height - paddingY * 2);
-      return `${index === 0 ? "M" : "L"}${x.toFixed(2)} ${y.toFixed(2)}`;
-    })
-    .join(" ");
-}
-
-function LandingDeltaHedgeWordmark({ className = "" }: { className?: string }) {
-  return (
-    <div className={`inline-flex items-center gap-3 ${className}`}>
-      <svg
-        viewBox="0 0 84 84"
-        fill="none"
-        xmlns="http://www.w3.org/2000/svg"
-        className="size-11 shrink-0 text-primary drop-shadow-[0_0_24px_rgba(123,137,255,0.2)]"
-      >
-        <path
-          d="M42 8L10 68H29.5L42 45L54.5 68H74L42 8Z"
-          fill="currentColor"
-        />
-        <path d="M28 68L53 18L64 18L39 68H28Z" fill="#080A03" />
-        <path d="M44 58L61 29L66 34L49 63L44 58Z" fill="currentColor" />
-      </svg>
-      <div className="flex items-baseline text-[22px] font-black uppercase tracking-[-0.05em]">
-        <span className="brand-gradient-text">Delta</span>
-        <span className="text-white">Hedge</span>
-      </div>
-    </div>
-  );
-}
-
 function AnalyticsPreviewFrame() {
-  const curvePath = buildAnalyticsCurvePath(analyticsCurveValues, 720, 220, 24, 18);
-
   return (
-    <div className="brand-surface relative overflow-hidden rounded-[32px] p-4 shadow-[0_28px_80px_rgba(3,7,18,0.45)]">
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(123,137,255,0.14),transparent_34%),radial-gradient(circle_at_bottom_right,rgba(45,212,191,0.10),transparent_28%)]" />
-      <div className="relative overflow-hidden rounded-[24px] border border-white/10 bg-[#080b12]">
-        <div className="grid lg:grid-cols-[220px_minmax(0,1fr)]">
-          <aside className="hidden border-r border-white/8 bg-[linear-gradient(180deg,rgba(9,13,22,0.98),rgba(7,10,18,0.98))] p-4 lg:flex lg:flex-col">
-            <LandingDeltaHedgeWordmark className="origin-left scale-[0.92]" />
-            <div className="mt-6 rounded-[22px] border border-primary/[0.12] bg-primary/[0.08] p-4">
-              <div className="text-[11px] uppercase tracking-[0.18em] text-primary">
-                Performance mode
-              </div>
-              <div className="mt-3 text-sm leading-6 text-zinc-300">
-                Solo cicli conclusi, netto già ripulito dal costo prop.
-              </div>
-            </div>
-            <div className="mt-6 space-y-2">
-              {desktopPreviewNav.map((item) => (
-                <div
-                  key={item}
-                  className={cn(
-                    "flex items-center justify-between rounded-2xl px-4 py-3 text-sm text-zinc-400",
-                    item === "Performance" &&
-                      "border border-white/10 bg-white/[0.05] text-white shadow-[0_12px_28px_rgba(3,7,18,0.25)]",
-                  )}
-                >
-                  <span>{item}</span>
-                  <span className="size-2 rounded-full bg-primary/80" />
-                </div>
-              ))}
-            </div>
-            <div className="mt-auto grid gap-3 pt-8">
-              {analyticsSnapshots.map((snapshot) => (
-                <div
-                  key={snapshot.label}
-                  className="rounded-[18px] border border-white/8 bg-white/[0.03] p-4"
-                >
-                  <div className="text-[11px] uppercase tracking-[0.16em] text-zinc-500">
-                    {snapshot.label}
-                  </div>
-                  <div className="mt-2 text-lg font-semibold text-white">{snapshot.value}</div>
-                  <div className="mt-1 text-sm text-zinc-500">{snapshot.note}</div>
-                </div>
-              ))}
-            </div>
-          </aside>
-
-          <div className="min-w-0">
-            <div className="flex items-center justify-between border-b border-white/8 bg-[linear-gradient(180deg,rgba(15,21,34,0.92),rgba(10,14,24,0.92))] px-4 py-3 md:px-5">
+    <div className="relative">
+      <div className="absolute inset-x-10 top-10 h-40 rounded-full bg-primary/12 blur-3xl" />
+      <div className="absolute bottom-14 left-1/2 h-24 w-3/4 -translate-x-1/2 rounded-full bg-cyan-400/10 blur-3xl" />
+      <div className="relative mx-auto max-w-5xl px-2 pt-6">
+        <div className="relative rounded-[34px] border border-white/10 bg-[linear-gradient(180deg,#171b25,#0a0d14)] p-3 shadow-[0_34px_100px_rgba(3,7,18,0.5)]">
+          <div className="overflow-hidden rounded-[26px] border border-white/8 bg-[#090c12]">
+            <div className="flex items-center justify-between border-b border-white/8 bg-[linear-gradient(180deg,rgba(18,24,36,0.96),rgba(10,14,24,0.96))] px-4 py-3 md:px-5">
               <div className="flex items-center gap-2">
                 <span className="size-2.5 rounded-full bg-rose-400/80" />
                 <span className="size-2.5 rounded-full bg-amber-300/80" />
                 <span className="size-2.5 rounded-full bg-emerald-400/80" />
               </div>
-              <div className="text-xs uppercase tracking-[0.2em] text-zinc-500">
-                Dashboard / Performance
+              <div className="hidden rounded-full border border-white/8 bg-white/[0.04] px-4 py-1.5 text-[11px] uppercase tracking-[0.18em] text-zinc-400 md:block">
+                app.deltahedges.com / dashboard
               </div>
               <div className="rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-[11px] uppercase tracking-[0.18em] text-primary">
-                Desktop mock
+                Laptop preview
               </div>
             </div>
-
-            <div className="space-y-5 p-4 md:p-5 lg:p-6">
-              <div className="flex flex-col gap-4 border-b border-white/8 pb-5 xl:flex-row xl:items-end xl:justify-between">
-                <div>
-                  <div className="text-[11px] uppercase tracking-[0.18em] text-zinc-500">
-                    Performance analytics
-                  </div>
-                  <div className="mt-2 text-2xl font-semibold tracking-tight text-white">
-                    Netto cumulato dei cicli chiusi
-                  </div>
-                  <div className="mt-3 max-w-2xl text-sm leading-6 text-zinc-400">
-                    Questa vista archivia solo i cicli completati e mostra il risultato netto finale:
-                    broker realizzato meno costo prop. Nessun mark-to-market sporco, nessun foglio esterno.
-                  </div>
+            <div className="relative">
+              <img
+                src={dashboardLaptopPreview}
+                alt="Dashboard DeltaHedge in vista desktop"
+                className="aspect-[16/9] w-full object-cover object-top"
+                width={2880}
+                height={2074}
+              />
+              <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(4,6,10,0.02),rgba(4,6,10,0.1))]" />
+              <div className="absolute left-4 top-4 rounded-2xl border border-white/10 bg-[#0b1120]/92 px-4 py-3 shadow-[0_12px_28px_rgba(4,8,20,0.45)] backdrop-blur md:left-6 md:top-6">
+                <div className="text-[11px] uppercase tracking-[0.16em] text-zinc-500">
+                  Performance analytics
                 </div>
-                <div className="grid gap-3 sm:grid-cols-3 xl:min-w-[420px]">
-                  <div className="rounded-[20px] border border-white/8 bg-white/[0.03] px-4 py-3">
-                    <div className="text-[11px] uppercase tracking-[0.16em] text-zinc-500">Ultimo ciclo</div>
-                    <div className="mt-2 text-xl font-semibold text-white">+$1,160</div>
-                  </div>
-                  <div className="rounded-[20px] border border-white/8 bg-white/[0.03] px-4 py-3">
-                    <div className="text-[11px] uppercase tracking-[0.16em] text-zinc-500">Ultimo update</div>
-                    <div className="mt-2 text-xl font-semibold text-white">31 mar</div>
-                  </div>
-                  <div className="rounded-[20px] border border-white/8 bg-white/[0.03] px-4 py-3">
-                    <div className="text-[11px] uppercase tracking-[0.16em] text-zinc-500">Preview</div>
-                    <div className="mt-2 text-xl font-semibold text-white">Desktop</div>
-                  </div>
-                </div>
+                <div className="mt-1 text-lg font-semibold text-white">Netto cicli conclusi</div>
               </div>
-
-              <div className="grid gap-3 lg:grid-cols-3">
+              <div className="absolute bottom-4 left-4 right-4 hidden gap-3 md:grid md:grid-cols-3 md:bottom-6 md:left-6 md:right-6">
                 {analyticsHighlights.map((item) => (
                   <div
                     key={item.label}
-                    className="rounded-[20px] border border-white/8 bg-[linear-gradient(180deg,rgba(255,255,255,0.045),rgba(255,255,255,0.02))] p-4"
+                    className="rounded-[20px] border border-white/10 bg-[#0a1020]/90 px-4 py-3 shadow-[0_16px_34px_rgba(4,8,20,0.42)] backdrop-blur"
                   >
                     <div className="flex items-center gap-2 text-zinc-400">
                       <item.icon className="size-4 text-primary" />
-                      <span className="text-[11px] uppercase tracking-[0.16em]">
-                        {item.label}
-                      </span>
+                      <span className="text-[11px] uppercase tracking-[0.16em]">{item.label}</span>
                     </div>
-                    <div className="mt-4 text-2xl font-semibold tracking-tight text-white">
-                      {item.value}
-                    </div>
-                    <div className="mt-2 text-sm leading-6 text-zinc-500">
-                      {item.note}
-                    </div>
+                    <div className="mt-2 text-xl font-semibold text-white">{item.value}</div>
+                    <div className="mt-1 text-xs leading-5 text-zinc-500">{item.note}</div>
                   </div>
                 ))}
-              </div>
-
-              <div className="grid gap-4 xl:grid-cols-[1.35fr_0.78fr]">
-                <div className="rounded-[24px] border border-white/8 bg-[linear-gradient(180deg,rgba(255,255,255,0.04),rgba(255,255,255,0.02))] p-4">
-                  <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-                    <div>
-                      <div className="text-[11px] uppercase tracking-[0.16em] text-zinc-500">
-                        Curva del netto cumulato
-                      </div>
-                      <div className="mt-2 text-lg font-semibold text-white">
-                        Crescita leggibile ciclo dopo ciclo
-                      </div>
-                    </div>
-                    <div className="text-sm text-zinc-400">
-                      Solo cicli archiviati. Nessun dato aperto o provvisorio.
-                    </div>
-                  </div>
-
-                  <div className="mt-5 overflow-hidden rounded-[20px] border border-white/6 bg-[#090d15] p-4">
-                    <div className="flex items-center justify-between text-[11px] uppercase tracking-[0.16em] text-zinc-500">
-                      <span>Netto cumulato</span>
-                      <span>+$8,420</span>
-                    </div>
-                    <svg
-                      viewBox="0 0 720 220"
-                      className="mt-4 h-[220px] w-full"
-                      fill="none"
-                      xmlns="http://www.w3.org/2000/svg"
-                    >
-                      {Array.from({ length: 5 }).map((_, index) => (
-                        <line
-                          key={index}
-                          x1="0"
-                          x2="720"
-                          y1={24 + index * 42}
-                          y2={24 + index * 42}
-                          stroke="rgba(255,255,255,0.07)"
-                          strokeDasharray="6 10"
-                        />
-                      ))}
-                      <path
-                        d={`${curvePath} L696 202 L24 202 Z`}
-                        fill="url(#analyticsFill)"
-                        opacity="0.22"
-                      />
-                      <path
-                        d={curvePath}
-                        stroke="url(#analyticsStroke)"
-                        strokeWidth="4"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                      <defs>
-                        <linearGradient id="analyticsStroke" x1="24" y1="26" x2="696" y2="202">
-                          <stop stopColor="#9be7ff" />
-                          <stop offset="0.45" stopColor="#d9e0ff" />
-                          <stop offset="1" stopColor="#7b89ff" />
-                        </linearGradient>
-                        <linearGradient id="analyticsFill" x1="360" y1="0" x2="360" y2="220">
-                          <stop stopColor="rgba(155,231,255,0.55)" />
-                          <stop offset="1" stopColor="rgba(123,137,255,0)" />
-                        </linearGradient>
-                      </defs>
-                    </svg>
-                  </div>
-                </div>
-
-                <div className="grid gap-4">
-                  <div className="rounded-[24px] border border-white/8 bg-[linear-gradient(180deg,rgba(255,255,255,0.04),rgba(255,255,255,0.02))] p-4">
-                    <div className="text-[11px] uppercase tracking-[0.16em] text-zinc-500">
-                      Lettura rapida
-                    </div>
-                    <div className="mt-3 space-y-3">
-                      {[
-                        "18 cicli archiviati",
-                        "7 slot già letti in netto finale",
-                        "2 payout prop in revisione",
-                      ].map((item) => (
-                        <div
-                          key={item}
-                          className="flex items-center justify-between rounded-2xl border border-white/8 bg-white/[0.03] px-4 py-3 text-sm text-zinc-300"
-                        >
-                          <span>{item}</span>
-                          <BadgeCheck className="size-4 text-primary" />
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="rounded-[24px] border border-white/8 bg-[linear-gradient(180deg,rgba(255,255,255,0.04),rgba(255,255,255,0.02))] p-4">
-                    <div className="text-[11px] uppercase tracking-[0.16em] text-zinc-500">
-                      Snapshot recenti
-                    </div>
-                    <div className="mt-4 space-y-4">
-                      {analyticsSnapshots.map((snapshot) => (
-                        <div key={snapshot.label} className="border-b border-white/6 pb-4 last:border-b-0 last:pb-0">
-                          <div className="text-sm text-zinc-500">{snapshot.label}</div>
-                          <div className="mt-1 text-lg font-semibold text-white">{snapshot.value}</div>
-                          <div className="mt-1 text-sm text-zinc-400">{snapshot.note}</div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="overflow-hidden rounded-[24px] border border-white/8 bg-[linear-gradient(180deg,rgba(255,255,255,0.03),rgba(255,255,255,0.018))]">
-                <div className="grid grid-cols-[1.1fr_auto_auto_auto] gap-3 border-b border-white/8 px-4 py-3 text-[11px] uppercase tracking-[0.16em] text-zinc-500">
-                  <span>Slot / Esito</span>
-                  <span>Broker</span>
-                  <span>Prop</span>
-                  <span>Netto</span>
-                </div>
-                <div className="divide-y divide-white/6">
-                  {analyticsCycles.map((cycle) => (
-                    <div
-                      key={`${cycle.slot}-${cycle.outcome}`}
-                      className="grid grid-cols-[1.1fr_auto_auto_auto] gap-3 px-4 py-4 text-sm"
-                    >
-                      <div>
-                        <div className="font-medium text-white">{cycle.slot}</div>
-                        <div className="mt-1 text-zinc-500">{cycle.outcome}</div>
-                      </div>
-                      <div className="text-zinc-300">{cycle.brokerRealized}</div>
-                      <div className="text-zinc-300">{cycle.propCost}</div>
-                      <div className="font-semibold text-primary">{cycle.net}</div>
-                    </div>
-                  ))}
-                </div>
               </div>
             </div>
           </div>
         </div>
+        <div className="mx-auto h-3 w-[84%] rounded-b-[999px] bg-[linear-gradient(180deg,#d8deea,#9ea8bf)] shadow-[0_16px_30px_rgba(2,6,18,0.2)]" />
+        <div className="mx-auto -mt-0.5 h-2 w-[96%] rounded-b-[999px] bg-[linear-gradient(180deg,#aeb7cb,#8792aa)] opacity-90" />
+      </div>
+      <div className="mt-6 grid gap-3 md:grid-cols-3">
+        {analyticsHighlights.map((item) => (
+          <div
+            key={`summary-${item.label}`}
+            className="rounded-[22px] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.04),rgba(255,255,255,0.02))] p-4"
+          >
+            <div className="flex items-center gap-2 text-zinc-400">
+              <item.icon className="size-4 text-primary" />
+              <span className="text-[11px] uppercase tracking-[0.16em]">{item.label}</span>
+            </div>
+            <div className="mt-3 text-2xl font-semibold text-white">{item.value}</div>
+            <div className="mt-2 text-sm leading-6 text-zinc-500">{item.note}</div>
+          </div>
+        ))}
       </div>
     </div>
   );
